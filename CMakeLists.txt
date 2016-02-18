@@ -53,8 +53,8 @@ add_executable(SkeletonProject
   common/shader.cpp
   common/shader.hpp
 
-  Skeleton/TransformVertexShader.vertexshader
-  Skeleton/ColorFragmentShader.fragmentshader
+  Skeleton/TransformVertexShader.glsl
+  Skeleton/ColorFragmentShader.glsl
 )
 
 target_link_libraries(SkeletonProject
