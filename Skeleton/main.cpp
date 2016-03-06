@@ -32,7 +32,7 @@ int main( void )
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow( 1024, 768, "YOUR NAME:STUDENT ID", NULL, NULL);
+	window = glfwCreateWindow( 1024, 768, "김준:20130156", NULL, NULL);
 	if( window == NULL ){
 		fprintf( stderr, "Failed to open GLFW window." );
 		glfwTerminate();
