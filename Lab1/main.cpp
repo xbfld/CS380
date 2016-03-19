@@ -34,8 +34,10 @@ std::vector<glm::vec3> g_vertex_buffer_data;
 glm::mat4 Projection;
 glm::mat4 View;
 float degree = 0.0f;
+glm::vec3 speed = glm::vec3(0.001f, 0.0006f, 0.0f);
+glm::vec3 position = glm::vec3();
 
-// TODO: Implement koch snowflake
+// DONE: Implement koch snowflake
 void koch_line(glm::vec3 a, glm::vec3 b, int iter)
 {
 	glm::vec3 b2a = b - a;
@@ -96,7 +98,7 @@ void init_model(void)
 
 }
 
-// TODO: Draw model
+// DONE: Draw model
 void draw_model()
 {
 	glUseProgram(programID);
@@ -105,13 +107,28 @@ void draw_model()
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), BUFFER_OFFSET(0));
 
-	degree += 0.3f;
-	glm::mat4 T = glm::mat4(1.0f);
-	glm::mat4 R = glm::rotate(sin(degree/180.0f*3.14f)*180.0f, glm::vec3(0, 0, 1));
-	glm::mat4 MVP = Projection * View * T*R;
+	degree += 0.04f;
+	position += speed;
+	if (position.x < -1.0f || position.x > 1.0f)
+	{
+		speed = glm::reflect(speed, glm::vec3(1.0f, 0.0f, 0.0f));
+	}
+	if (position.y < -0.8f || position.y > 0.8f)
+	{
+		speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+
+	glm::mat4 T = glm::translate(position);
+	glm::mat4 R = glm::rotate(sin(degree / 180.0f*3.14f)*360.0f, glm::vec3(0, 0, 1));
+	glm::mat4 MVP = Projection * View * T * R;
+	glm::mat4 MVP2 = Projection * View;
 
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
+
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP2[0][0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 
