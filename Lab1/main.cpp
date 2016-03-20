@@ -33,6 +33,10 @@ std::vector<glm::vec3> g_vertex_buffer_data;
 
 glm::mat4 Projection;
 glm::mat4 View;
+
+// Using on objects positions
+float main_size = 0.6f;
+float sub_size = 0.1f;
 float degree = 0.0f;
 double last_time = 0.0;
 glm::vec3 speed = glm::vec3(1.0f, 0.6f, 0.0f);
@@ -104,35 +108,50 @@ void draw_model()
 	glBindVertexArray(VAID);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), BUFFER_OFFSET(0));
+	glVertexAttribPointer(
+		0,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		0*sizeof(glm::vec3),
+		BUFFER_OFFSET(0)
+	);
 
 	double current_time = glfwGetTime();
 	double delta_time = current_time - last_time;
 	last_time = current_time;
 
 	degree += 60.0f * (float)delta_time;
-	position += speed * (float)delta_time;
-	if (position.x < -1.0f || position.x > 1.0f)
-	{
-		speed = glm::reflect(speed, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-	if (position.y < -0.8f || position.y > 0.8f)
-	{
-		speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-
+	//position += speed * (float)delta_time;
+	//if (position.x < -1.0f || position.x > 1.0f)
+	//{
+	//	speed = glm::reflect(speed, glm::vec3(1.0f, 0.0f, 0.0f));
+	//}
+	//if (position.y < -0.8f || position.y > 0.8f)
+	//{
+	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
+	//}
+	
 	glm::mat4 T = glm::translate(position);
-	glm::mat4 R = glm::rotate(sin(degree / 180.0f*3.14f)*180.0f, glm::vec3(0, 0, 1));
-	glm::mat4 MVP = Projection * View * T * R;
-	glm::mat4 MVP2 = Projection * View;
+	glm::mat4 R = glm::rotate(degree, glm::vec3(0, 0, 1));
+	glm::mat4 S = glm::scale(glm::vec3(main_size));
+	glm::mat4 MVP = Projection * View * T * R * S;
 
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
+	// Draw main snowflake
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP2[0][0]);
-
+	// Draw sub snowflake
+	float radius = 0.8f;
+	T = glm::translate(
+		position
+		+ vec3(glm::rotate(vec2(0.0f, -1.0f) * radius, degree), 0.0f)
+	);
+	S = glm::scale(glm::vec3(sub_size));
+	MVP = Projection * View * T * S;
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 
 	glDisableVertexAttribArray(0);
@@ -147,9 +166,10 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 	float ratio = (float)width / (float)height;
 	// make min(fovx,fovy) be 45.0f
 	// and, fovy = fovx * height / width
-	Projection = glm::perspective(45.0f / (min(1.0f, ratio)), ratio, 0.1f, 100.0f);
+	Projection = glm::perspective(45.0f, ratio, 0.1f, 100.0f);
 	// glfwSetWindowSize(window, width, height);
 	printf("%f w: %d h: %d\n", glfwGetTime(), width, height);
+	printf("%f\n", 45.0f / (min(1.0f, ratio)));
 }
 
 

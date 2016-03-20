@@ -1,9 +1,11 @@
 #version 330 core
 
+in vec3 fragmentColor;
+
 // Ouput color
 out vec3 color;
 
 void main(){
 	// Output color = color specified in the vertex shader
-	color = vec3(0.0, 1.0, 1.0);
+	color = fragmentColor;
 }
