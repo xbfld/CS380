@@ -34,8 +34,9 @@ std::vector<glm::vec3> g_vertex_buffer_data;
 glm::mat4 Projection;
 glm::mat4 View;
 float degree = 0.0f;
-glm::vec3 speed = glm::vec3(0.001f, 0.0006f, 0.0f);
-glm::vec3 position = glm::vec3();
+double last_time = 0.0;
+glm::vec3 speed = glm::vec3(1.0f, 0.6f, 0.0f);
+glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // DONE: Implement koch snowflake
 void koch_line(glm::vec3 a, glm::vec3 b, int iter)
@@ -82,10 +83,6 @@ void init_model(void)
 	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], 5);
 	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], 5);
 
-
-
-
-
 	// Generates Vertex Array Objects in the GPU¡¯s memory and passes back their identifiers
 	// Create a vertex array object that represents vertex attributes stored in a vertex buffer object.
 	glGenVertexArrays(1, &VAID);
@@ -95,6 +92,8 @@ void init_model(void)
 	glGenBuffers(1, &VBID);
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_vertex_buffer_data.size(), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
+
+	last_time = glfwGetTime();
 
 }
 
@@ -107,8 +106,12 @@ void draw_model()
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), BUFFER_OFFSET(0));
 
-	degree += 0.04f;
-	position += speed;
+	double current_time = glfwGetTime();
+	double delta_time = current_time - last_time;
+	last_time = current_time;
+
+	degree += 60.0f * (float)delta_time;
+	position += speed * (float)delta_time;
 	if (position.x < -1.0f || position.x > 1.0f)
 	{
 		speed = glm::reflect(speed, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -119,7 +122,7 @@ void draw_model()
 	}
 
 	glm::mat4 T = glm::translate(position);
-	glm::mat4 R = glm::rotate(sin(degree / 180.0f*3.14f)*360.0f, glm::vec3(0, 0, 1));
+	glm::mat4 R = glm::rotate(sin(degree / 180.0f*3.14f)*180.0f, glm::vec3(0, 0, 1));
 	glm::mat4 MVP = Projection * View * T * R;
 	glm::mat4 MVP2 = Projection * View;
 
@@ -134,6 +137,21 @@ void draw_model()
 
 	glDisableVertexAttribArray(0);
 }
+
+// Resize Window
+void window_size_callback(GLFWwindow* window, int width, int height)
+{
+
+	glViewport(0, 0, width, height);
+
+	float ratio = (float)width / (float)height;
+	// make min(fovx,fovy) be 45.0f
+	// and, fovy = fovx * height / width
+	Projection = glm::perspective(45.0f / (min(1.0f, ratio)), ratio, 0.1f, 100.0f);
+	// glfwSetWindowSize(window, width, height);
+	printf("%f w: %d h: %d\n", glfwGetTime(), width, height);
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -186,6 +204,9 @@ int main(int argc, char* argv[])
 	programID = LoadShaders("VertexShader.glsl", "FragmentShader.glsl");
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	// END
+
+	glfwSetWindowSizeCallback(window, window_size_callback);
+
 	init_model();
 
 	// Step 2: Main event loop
