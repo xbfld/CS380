@@ -141,18 +141,22 @@ void draw_model()
 	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
 	//}
 	
+	// Draw main snowflake
 	glm::mat4 T = glm::translate(position);
 	glm::mat4 R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	glm::mat4 S = glm::scale(glm::vec3(main_size));
 	glm::mat4 MVP = Projection * View * T * R * S;
+	float main_color[3] { 1.0f, 0.0f, 1.0f };
 
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
 
-	// Draw main snowflake
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniform3fv(ColorID, 1, main_color);
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 
 	// Draw sub snowflake
+	float sub_color[3]{ 0.0f, 1.0f, 1.0f };
 	float radius = 0.8f;
 	T = glm::translate(
 		position
@@ -160,7 +164,9 @@ void draw_model()
 	);
 	S = glm::scale(glm::vec3(sub_size));
 	MVP = Projection * View * T * S;
+
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniform3fv(ColorID, 1, sub_color);
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 
 	glDisableVertexAttribArray(0);
@@ -222,7 +228,7 @@ int main(int argc, char* argv[])
 	glm::mat4 MVP = Projection * View * Model;
 
 	// DONE: Initialize OpenGL and GLSL
-	glClearColor(0.1f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
