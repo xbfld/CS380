@@ -82,3 +82,24 @@ target_link_libraries(Lab1
 # Xcode and Visual Studio working directories
 set_target_properties(Lab1 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Lab1/")
 create_target_launcher(Lab1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Lab1/")
+
+# Lab session 2
+add_executable(Lab2
+	Lab2/main.cpp
+
+	common/shader.cpp
+	common/shader.hpp
+  	common/model.cpp
+  	common/model.hpp
+
+	Lab2/VertexShader.glsl
+	Lab2/FragmentShader.glsl
+)
+target_link_libraries(Lab2
+  ${ALL_LIBS}
+)
+
+# Xcode and Visual Studio working directories
+set_target_properties(Lab2 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR
+ "${CMAKE_CURRENT_SOURCE_DIR}/Lab2/")
+create_target_launcher(Lab2 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Lab2/")
