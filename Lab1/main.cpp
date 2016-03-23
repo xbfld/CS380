@@ -30,9 +30,13 @@ GLuint VBID;
 
 std::vector<glm::vec3> initial_triangle;
 std::vector<glm::vec3> g_vertex_buffer_data;
+std::vector<glm::vec3> g_color_buffer_data;
 
 glm::mat4 Projection;
 glm::mat4 View;
+
+// snowflakes iteration steps
+const int snowflake_iter = 5;
 
 // Using on objects positions
 float main_size = 0.6f;
@@ -83,9 +87,9 @@ void init_model(void)
 	{
 		g_vertex_buffer_data.push_back(initial_triangle[i] - center);
 	}
-	koch_line(g_vertex_buffer_data[0], g_vertex_buffer_data[1], 5);
-	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], 5);
-	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], 5);
+	koch_line(g_vertex_buffer_data[0], g_vertex_buffer_data[1], snowflake_iter);
+	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], snowflake_iter);
+	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], snowflake_iter);
 
 	// Generates Vertex Array Objects in the GPU¡¯s memory and passes back their identifiers
 	// Create a vertex array object that represents vertex attributes stored in a vertex buffer object.
@@ -96,6 +100,11 @@ void init_model(void)
 	glGenBuffers(1, &VBID);
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_vertex_buffer_data.size(), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
+	
+	//GLuint colorbuffer;
+	//glGenBuffers(1, &colorbuffer);
+	//glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_color_buffer_data.size(), &g_color_buffer_data[0], GL_STATIC_DRAW);
 
 	last_time = glfwGetTime();
 
