@@ -143,6 +143,30 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 		case GLFW_KEY_R:
 			m = glm::rotate(glm::mat4(1.0f), -1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			break;
+		case GLFW_KEY_U:
+			m = glm::rotate(glm::mat4(1.0f), 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_D:
+			m = glm::rotate(glm::mat4(1.0f), -1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_E:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_W:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(-0.1f, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_N:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.1f, 0.0f));
+			break;
+		case GLFW_KEY_S:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+			break;
+		case GLFW_KEY_F:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.1f));
+			break;
+		case GLFW_KEY_B:
+			m = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.1f));
+			break;
 		default:
 			break;
 		}
