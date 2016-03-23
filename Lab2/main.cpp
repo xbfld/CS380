@@ -62,12 +62,34 @@ void compute_normal(Model &model, glm::vec3 a, glm::vec3 b, glm::vec3 c)
 
 void quad(Model &model, int a, int b, int c, int d, glm::vec3 color)
 {
-	// TODO: quad() function
+	// DONE: quad() function
+	model.add_vertex(vertices[a]);
+	model.add_vertex(vertices[b]);
+	model.add_vertex(vertices[c]);
+	model.add_vertex(vertices[a]);
+	model.add_vertex(vertices[c]);
+	model.add_vertex(vertices[d]);
+
+	compute_normal(model, vertices[a], vertices[b], vertices[c]);
+	compute_normal(model, vertices[a], vertices[c], vertices[d]);
+
+	model.add_color(color);
+	model.add_color(color);
+	model.add_color(color);
+	model.add_color(color);
+	model.add_color(color);
+	model.add_color(color);
 }
 
 void init_cube(Model &model, glm::vec3 color)
 {
-	// TODO: init_cube() function
+	// DONE: init_cube() function
+	quad(model, 1, 0, 3, 2, color);
+	quad(model, 2, 3, 7, 6, color);
+	quad(model, 3, 0, 4, 7, color);
+	quad(model, 6, 5, 1, 2, color);
+	quad(model, 4, 5, 6, 7, color);
+	quad(model, 5, 4, 0, 1, color);
 }
 
 void init_ground(Model &model)
@@ -99,13 +121,46 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 {
 	if (action == GLFW_PRESS)
 	{
-		// TODO: Change select_frame by Keyboard Input
+		// DONE: Change select_frame by Keyboard Input
+		switch (key)
+		{
+		case GLFW_KEY_V:
+			select_frame = (select_frame + 1) % number_of_frames;
+			break;
+		default:
+			break;
+		}
+		// DONE END
 	}
 	else {
-		// TODO: Compute Transformation with Keyboard Input
-
-		// TODO: Apply Transformation To Frame
-
+		// DONE: Compute Transformation with Keyboard Input
+		glm::mat4 m = glm::mat4(1.0f);
+		switch (key)
+		{
+		case GLFW_KEY_L:
+			m = glm::rotate(glm::mat4(1.0f), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+			break;
+		case GLFW_KEY_R:
+			m = glm::rotate(glm::mat4(1.0f), -1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+			break;
+		default:
+			break;
+		}
+		// DONE: Apply Transformation To Frame
+		switch (select_frame)
+		{
+		case 0:
+			skyRBT = skyRBT * m;
+			break;
+		case 1:
+			redCubeRBT = redCubeRBT * m;
+			break;
+		case 2:
+			greenCubeRBT = greenCubeRBT * m;
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -169,9 +224,25 @@ int main(void)
 	glm::mat4 groundRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, g_groundY, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_groundSize, 1.0f, g_groundSize));
 	ground.set_model(&groundRBT);
 
-	// TODO: Initialize Two Cube Models
+	// DONE: Initialize Two Cube Models
+	redCube = Model();
+	init_cube(redCube, glm::vec3(1.0f, 0.0f, 0.0f));
+	redCube.initialize("VertexShader.glsl", "FragmentShader.glsl");
+	redCube.set_projection(&Projection);
+	redCube.set_eye(&eyeRBT);
+	redCubeRBT = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.5f, 0.0f))
+		* glm::rotate(glm::mat4(1.0f), -90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	redCube.set_model(&redCubeRBT);
 
-	// TODO END
+	greenCube = Model();
+	init_cube(greenCube, glm::vec3(0.0f, 1.0f, 0.0f));
+	greenCube.initialize("VertexShader.glsl", "FragmentShader.glsl");
+	greenCube.set_projection(&Projection);
+	greenCube.set_eye(&eyeRBT);
+	greenCubeRBT = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.5f,
+		0.0f)) * glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	greenCube.set_model(&greenCubeRBT);
+	// DONE END
 
 	// Setting Light Vectors
 	glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -194,13 +265,14 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		currTime = glfwGetTime();
 
-		// TODO: Change Viewpoint by select_frame
+		// DONE: Change Viewpoint by select_frame
+		eyeRBT = (select_frame == 0) ? skyRBT : (select_frame == 1) ? redCubeRBT : greenCubeRBT;
+		// DONE END
 
-		// TODO END
-
-		// TODO: Draw Two Cube Models
-
-		// TODO END
+		// DONE: Draw Two Cube Models
+		redCube.draw();
+		greenCube.draw();
+		// DONE END
 
 		ground.draw();
 		degree = degree + 6.0f * (currTime - prevTime);
