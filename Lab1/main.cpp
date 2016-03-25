@@ -27,10 +27,13 @@ int windowWidth, windowHeight;
 GLuint programID;
 GLuint VAID;
 GLuint VBID;
+GLuint PillarID;
+GLuint colorbuffer;
 
 std::vector<glm::vec3> initial_triangle;
 std::vector<glm::vec3> g_vertex_buffer_data;
-std::vector<glm::vec3> g_color_buffer_data;
+//std::vector<glm::vec3> g_color_buffer_data;
+std::vector<glm::vec3> pillar_vertex_buffer_data;
 
 glm::mat4 Projection;
 glm::mat4 View;
@@ -40,11 +43,26 @@ const int snowflake_iter = 5;
 
 // Using on objects positions
 float main_size = 0.6f;
-float sub_size = 0.1f;
+float sub_size = 0.3f;
 float degree = 0.0f;
 double last_time = 0.0;
 glm::vec3 speed = glm::vec3(1.0f, 0.6f, 0.0f);
 glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+// Pillar
+float top = 20.0f;
+float bottom = 0.01f;
+
+void wall(glm::vec2 a, glm::vec2 b)
+{
+	pillar_vertex_buffer_data.push_back(glm::vec3(a, bottom));
+	pillar_vertex_buffer_data.push_back(glm::vec3(b, bottom));
+	pillar_vertex_buffer_data.push_back(glm::vec3(a, top));
+	pillar_vertex_buffer_data.push_back(glm::vec3(a, top));
+	pillar_vertex_buffer_data.push_back(glm::vec3(b, bottom));
+	pillar_vertex_buffer_data.push_back(glm::vec3(b, top));
+}
+
 
 // DONE: Implement koch snowflake
 void koch_line(glm::vec3 a, glm::vec3 b, int iter)
@@ -62,12 +80,17 @@ void koch_line(glm::vec3 a, glm::vec3 b, int iter)
 		g_vertex_buffer_data.push_back(points[i]);
 	}
 
-	if (iter > 0)
+	if (iter < snowflake_iter)
 	{
-		koch_line(a, points[0], iter - 1);
-		koch_line(points[0], points[1], iter - 1);
-		koch_line(points[1], points[2], iter - 1);
-		koch_line(points[2], b, iter - 1);
+		koch_line(a, points[0], iter + 1);
+		koch_line(points[0], points[1], iter + 1);
+		koch_line(points[1], points[2], iter + 1);
+		koch_line(points[2], b, iter + 1);
+	}
+	if (iter == 3)
+	{
+		wall(glm::vec2(a), glm::vec2(points[1]));
+		wall(glm::vec2(points[1]), glm::vec2(b));
 	}
 	points.clear();
 
@@ -87,9 +110,12 @@ void init_model(void)
 	{
 		g_vertex_buffer_data.push_back(initial_triangle[i] - center);
 	}
-	koch_line(g_vertex_buffer_data[0], g_vertex_buffer_data[1], snowflake_iter);
-	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], snowflake_iter);
-	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], snowflake_iter);
+	koch_line(g_vertex_buffer_data[0], g_vertex_buffer_data[1], 0);
+	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], 0);
+	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], 0);
+
+
+
 
 	// Generates Vertex Array Objects in the GPU¡¯s memory and passes back their identifiers
 	// Create a vertex array object that represents vertex attributes stored in a vertex buffer object.
@@ -100,11 +126,19 @@ void init_model(void)
 	glGenBuffers(1, &VBID);
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_vertex_buffer_data.size(), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
-	
-	//GLuint colorbuffer;
-	//glGenBuffers(1, &colorbuffer);
-	//glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_color_buffer_data.size(), &g_color_buffer_data[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &PillarID);
+	glBindBuffer(GL_ARRAY_BUFFER, PillarID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*pillar_vertex_buffer_data.size(), &pillar_vertex_buffer_data[0], GL_STATIC_DRAW);
+
+
+	/*g_color_buffer_data.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+	g_color_buffer_data.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+	g_color_buffer_data.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+
+	glGenBuffers(1, &colorbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_color_buffer_data.size(), &g_color_buffer_data[0], GL_STATIC_DRAW);*/
 
 	last_time = glfwGetTime();
 
@@ -116,7 +150,7 @@ void draw_snowflake(glm::mat4 MVP, float color[])
 	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniform3fv(ColorID, 1, color);
+	glUniform4fv(ColorID, 1, color);
 	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
 }
 
@@ -127,14 +161,18 @@ void draw_model()
 	glBindVertexArray(VAID);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, VBID);
-	glVertexAttribPointer(
-		0,
-		3,
-		GL_FLOAT,
-		GL_FALSE,
-		0*sizeof(glm::vec3),
-		BUFFER_OFFSET(0)
-	);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+	//glEnableVertexAttribArray(1);
+	//glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+	//glVertexAttribPointer(
+	//	1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+	//	3,                                // size
+	//	GL_FLOAT,                         // type
+	//	GL_FALSE,                         // normalized?
+	//	0,                                // stride
+	//	(void*)0                          // array buffer offset
+	//	);
 
 	double current_time = glfwGetTime();
 	double delta_time = current_time - last_time;
@@ -150,30 +188,56 @@ void draw_model()
 	//{
 	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
 	//}
-	
+
+	// Draw sub snowflake
+	float sub_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
+	float radius = 0.8f;
+	float radian = radians(degree);
+	vec2 xy = vec2(cos(radian), sin(radian*1.2)) * radius;
+	/*View = glm::lookAt(
+		glm::vec3(xy, 2),
+		glm::vec3(xy, 0),
+		glm::vec3(0, 1, 0));*/
+	View = glm::lookAt(
+		glm::vec3(0, 0, 2),
+		glm::vec3(0, 0, 0),
+		glm::vec3(0, 1, 0));
+
+	glm::mat4 T = glm::translate(
+		position
+		+ vec3(xy, 0.01f)
+		);
+	glm::mat4 S = glm::scale(glm::vec3(sub_size));
+	glm::mat4 MVP = Projection * View * T * S;
+
+	draw_snowflake(MVP, sub_color);
 	// Draw main snowflake
-	glm::mat4 T = glm::translate(position);
+	T = glm::translate(position);
 	glm::mat4 R = glm::rotate(degree, glm::vec3(0, 0, 1));
-	glm::mat4 S = glm::scale(glm::vec3(main_size));
-	glm::mat4 MVP = Projection * View * T * R * S;
-	float main_color[3] { 1.0f, 0.0f, 1.0f };
+	S = glm::scale(glm::vec3(main_size));
+	MVP = Projection * View * T * R * S;
+	float main_color[4]{ 1.0f, 0.0f, 1.0f, 1.0f };
 
 	draw_snowflake(MVP, main_color);
 
-	// Draw sub snowflake
-	float sub_color[3]{ 0.0f, 1.0f, 1.0f };
-	float radius = 0.8f;
-	float radian = radians(degree);
-	T = glm::translate(
-		position
-		+ vec3(vec2(cos(radian), sin(radian*1.2)) * radius, 0.01f)
-	);
-	S = glm::scale(glm::vec3(sub_size));
-	MVP = Projection * View * T * S;
+	glDisableVertexAttribArray(0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, PillarID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	T = glm::translate(position);
+	R = glm::rotate(degree, glm::vec3(0, 0, 1));
+	S = glm::scale(glm::vec3(main_size));
+	MVP = Projection * View * T * R * S;
+	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
+	float color[4]{ 0.5f, 0.5f, 0.5f, 0.3f };
 
-	draw_snowflake(MVP, sub_color);
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniform4fv(ColorID, 1, color);
+	glDrawArrays(GL_TRIANGLES, 0, pillar_vertex_buffer_data.size());
 
 	glDisableVertexAttribArray(0);
+	//glDisableVertexAttribArray(1);
 }
 
 // Resize Window
@@ -235,6 +299,8 @@ int main(int argc, char* argv[])
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
