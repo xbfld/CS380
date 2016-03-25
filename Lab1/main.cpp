@@ -42,8 +42,9 @@ glm::mat4 View;
 const int snowflake_iter = 5;
 
 // Using on objects positions
-float main_size = 0.6f;
-float sub_size = 0.3f;
+float main_size = 0.3f;
+float sub_size = 0.2f;
+float back_size = 0.05f;
 float degree = 0.0f;
 double last_time = 0.0;
 glm::vec3 speed = glm::vec3(1.0f, 0.6f, 0.0f);
@@ -189,31 +190,48 @@ void draw_model()
 	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
 	//}
 
-	// Draw sub snowflake
-	float sub_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
-	float radius = 0.8f;
-	float radian = radians(degree);
-	vec2 xy = vec2(cos(radian), sin(radian*1.2)) * radius;
+	// View Point
 	/*View = glm::lookAt(
-		glm::vec3(xy, 2),
-		glm::vec3(xy, 0),
-		glm::vec3(0, 1, 0));*/
+	glm::vec3(xy, 2),
+	glm::vec3(xy, 0),
+	glm::vec3(0, 1, 0));*/
 	View = glm::lookAt(
 		glm::vec3(0, 0, 2),
 		glm::vec3(0, 0, 0),
 		glm::vec3(0, 1, 0));
 
-	glm::mat4 T = glm::translate(
+	glm::mat4 T;
+	glm::mat4 R;
+	glm::mat4 S;
+	glm::mat4 MVP;
+
+
+	// Draw background snowflake
+	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+	T = glm::translate(position);
+	R = glm::rotate(degree*1.3f, glm::vec3(0, 0, 1));
+	S = glm::scale(glm::vec3(back_size));
+	MVP = Projection * View * T * R * S;
+	draw_snowflake(MVP, white_color);
+
+	// Draw sub snowflake
+	float sub_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
+	float radius = 0.8f;
+	float radian = radians(degree);
+	vec2 xy = vec2(cos(radian), sin(radian*1.2)) * radius;
+
+	T = glm::translate(
 		position
 		+ vec3(xy, 0.01f)
 		);
-	glm::mat4 S = glm::scale(glm::vec3(sub_size));
-	glm::mat4 MVP = Projection * View * T * S;
+	S = glm::scale(glm::vec3(sub_size));
+	MVP = Projection * View * T * S;
 
 	draw_snowflake(MVP, sub_color);
 	// Draw main snowflake
 	T = glm::translate(position);
-	glm::mat4 R = glm::rotate(degree, glm::vec3(0, 0, 1));
+	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
 	MVP = Projection * View * T * R * S;
 	float main_color[4]{ 1.0f, 0.0f, 1.0f, 1.0f };
@@ -230,7 +248,7 @@ void draw_model()
 	MVP = Projection * View * T * R * S;
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
-	float color[4]{ 0.5f, 0.5f, 0.5f, 0.3f };
+	float color[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glUniform4fv(ColorID, 1, color);
