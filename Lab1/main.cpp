@@ -34,6 +34,7 @@ std::vector<glm::vec3> initial_triangle;
 std::vector<glm::vec3> g_vertex_buffer_data;
 //std::vector<glm::vec3> g_color_buffer_data;
 std::vector<glm::vec3> pillar_vertex_buffer_data;
+std::vector<glm::vec3> back_snowflakes_position;
 
 glm::mat4 Projection;
 glm::mat4 View;
@@ -41,13 +42,22 @@ glm::mat4 View;
 // snowflakes iteration steps
 const int snowflake_iter = 5;
 
+// background snowflakes
+const int back_snowflake_number = 10;
+const float xrange[2]{ -1.0f,1.0f };
+const float yrange[2]{ -1.0f,1.0f };
+const float lifespan = 2.0f;
+const float speed = 1.0f;
+float snowflakes_phase = 0.0f;
+glm::mat4 R_frame = glm::rotate(30.0f, glm::vec3(0, 0, 1));
+
 // Using on objects positions
-float main_size = 0.3f;
+float back_size = 0.1f;
 float sub_size = 0.2f;
-float back_size = 0.05f;
+float main_size = 0.3f;
+
 float degree = 0.0f;
 double last_time = 0.0;
-glm::vec3 speed = glm::vec3(1.0f, 0.6f, 0.0f);
 glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // Pillar
@@ -64,6 +74,13 @@ void wall(glm::vec2 a, glm::vec2 b)
 	pillar_vertex_buffer_data.push_back(glm::vec3(b, top));
 }
 
+vec3 random_start_point()
+{
+	float x = (xrange[1] - xrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + xrange[0];
+	float y = (yrange[1] - yrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + yrange[0];
+	//printf("%f, %f", x, y);
+	return vec3(x, y + speed * lifespan / 2.0f, 0.0f);
+}
 
 // DONE: Implement koch snowflake
 void koch_line(glm::vec3 a, glm::vec3 b, int iter)
@@ -143,6 +160,13 @@ void init_model(void)
 
 	last_time = glfwGetTime();
 
+	// init background snowflake
+
+	for (size_t i = 0; i < back_snowflake_number; i++)
+	{
+		back_snowflakes_position.push_back(random_start_point());
+	}
+
 }
 
 void draw_snowflake(glm::mat4 MVP, float color[])
@@ -205,15 +229,27 @@ void draw_model()
 	glm::mat4 S;
 	glm::mat4 MVP;
 
-
 	// Draw background snowflake
 	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+	snowflakes_phase += delta_time;
+	if (lifespan < snowflakes_phase)
+	{
+		snowflakes_phase -= lifespan;
+		for (size_t i = 0; i < back_snowflake_number; i++)
+		{
+			back_snowflakes_position[i] = random_start_point();
+		}
+	}
+	for (size_t i = 0; i < back_snowflake_number; i++)
+	{
+		T = glm::translate(back_snowflakes_position[i]+vec3(0.0f, -speed, 0.0f)*snowflakes_phase);
+		R = glm::rotate(degree*1.3f, glm::vec3(0, 0, 1));
+		S = glm::scale(glm::vec3(back_size)
+			*(snowflakes_phase)*(lifespan-snowflakes_phase)*4.0f/ lifespan/ lifespan); // back_size is Max size
+		MVP = Projection * View * R_frame * T * R * S;
+		draw_snowflake(MVP, white_color);
+	}
 
-	T = glm::translate(position);
-	R = glm::rotate(degree*1.3f, glm::vec3(0, 0, 1));
-	S = glm::scale(glm::vec3(back_size));
-	MVP = Projection * View * T * R * S;
-	draw_snowflake(MVP, white_color);
 
 	// Draw sub snowflake
 	float sub_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
