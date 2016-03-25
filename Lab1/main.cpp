@@ -64,14 +64,14 @@ glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 float top = 20.0f;
 float bottom = 0.01f;
 
-void wall(glm::vec2 a, glm::vec2 b)
+void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 {
-	pillar_vertex_buffer_data.push_back(glm::vec3(a, bottom));
-	pillar_vertex_buffer_data.push_back(glm::vec3(b, bottom));
-	pillar_vertex_buffer_data.push_back(glm::vec3(a, top));
-	pillar_vertex_buffer_data.push_back(glm::vec3(a, top));
-	pillar_vertex_buffer_data.push_back(glm::vec3(b, bottom));
-	pillar_vertex_buffer_data.push_back(glm::vec3(b, top));
+	(*buffer_data).push_back(glm::vec3(a, bottom));
+	(*buffer_data).push_back(glm::vec3(b, bottom));
+	(*buffer_data).push_back(glm::vec3(a, top));
+	(*buffer_data).push_back(glm::vec3(a, top));
+	(*buffer_data).push_back(glm::vec3(b, bottom));
+	(*buffer_data).push_back(glm::vec3(b, top));
 }
 
 vec3 random_start_point()
@@ -107,8 +107,8 @@ void koch_line(glm::vec3 a, glm::vec3 b, int iter)
 	}
 	if (iter == 3)
 	{
-		wall(glm::vec2(a), glm::vec2(points[1]));
-		wall(glm::vec2(points[1]), glm::vec2(b));
+		wall(glm::vec2(a), glm::vec2(points[1]), &pillar_vertex_buffer_data);
+		wall(glm::vec2(points[1]), glm::vec2(b), &pillar_vertex_buffer_data);
 	}
 	points.clear();
 
@@ -381,7 +381,10 @@ int main(int argc, char* argv[])
 	// Step 3: Termination
 	initial_triangle.clear();
 	g_vertex_buffer_data.clear();
+	pillar_vertex_buffer_data.clear();
+	back_snowflakes_position.clear();
 
+	glDeleteBuffers(1, &PillarID);
 	glDeleteBuffers(1, &VBID);
 	glDeleteProgram(programID);
 	glDeleteVertexArrays(1, &VAID);
