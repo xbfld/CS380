@@ -43,7 +43,7 @@ glm::mat4 View;
 const int snowflake_iter = 5;
 
 // background snowflakes
-const int back_snowflake_number = 10;
+const int back_snowflake_number = 100;
 const float xrange[2]{ -1.0f,1.0f };
 const float yrange[2]{ -1.0f,1.0f };
 const float lifespan = 2.0f;
@@ -62,7 +62,7 @@ glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // Pillar
 float top = 20.0f;
-float bottom = 0.01f;
+float bottom = -0.01f;
 
 void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 {
@@ -214,20 +214,17 @@ void draw_model()
 	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
 	//}
 
-	// View Point
-	/*View = glm::lookAt(
-	glm::vec3(xy, 2),
-	glm::vec3(xy, 0),
-	glm::vec3(0, 1, 0));*/
-	View = glm::lookAt(
-		glm::vec3(0, 0, 2),
-		glm::vec3(0, 0, 0),
-		glm::vec3(0, 1, 0));
 
 	glm::mat4 T;
 	glm::mat4 R;
 	glm::mat4 S;
 	glm::mat4 MVP;
+
+	//Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+	View = glm::lookAt(
+		glm::vec3(0, 0, 2),
+		glm::vec3(0, 0, 0),
+		glm::vec3(0, 1, 0));
 
 	// Draw background snowflake
 	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -242,10 +239,10 @@ void draw_model()
 	}
 	for (size_t i = 0; i < back_snowflake_number; i++)
 	{
-		T = glm::translate(back_snowflakes_position[i]+vec3(0.0f, -speed, 0.0f)*snowflakes_phase);
+		T = glm::translate(back_snowflakes_position[i] + vec3(0.0f, -speed, 0.0f)*snowflakes_phase);
 		R = glm::rotate(degree*1.3f, glm::vec3(0, 0, 1));
 		S = glm::scale(glm::vec3(back_size)
-			*(snowflakes_phase)*(lifespan-snowflakes_phase)*4.0f/ lifespan/ lifespan); // back_size is Max size
+			*(snowflakes_phase)*(lifespan - snowflakes_phase)*4.0f / lifespan / lifespan); // back_size is Max size
 		MVP = Projection * View * R_frame * T * R * S;
 		draw_snowflake(MVP, white_color);
 	}
@@ -265,14 +262,39 @@ void draw_model()
 	MVP = Projection * View * T * S;
 
 	draw_snowflake(MVP, sub_color);
+
+	// Draw revolution snowflake
+	View = glm::lookAt(
+		glm::vec3(0, 0, 2),
+		glm::vec3(0, 0, 0),
+		glm::vec3(0, 1, 0));
+	T = glm::translate(
+		position
+		+ vec3(vec2(cos(radian*2.0f), - sin(radian*2.0f)) * radius * 0.5f, 0.01f)
+		);
+	R = glm::rotate(degree, glm::vec3(0, 0, 1));
+	S = glm::scale(glm::vec3(sub_size));
+	MVP = Projection * View * T * R * S;
+	float revo_color[4]{ 1.0f, 1.0f, 0.0f, 1.0f };
+	draw_snowflake(MVP, revo_color);
+
 	// Draw main snowflake
+	View = glm::lookAt(
+		glm::vec3(0, 0, 2),
+		glm::vec3(0, 0, 0),
+		glm::vec3(0, 1, 0));
 	T = glm::translate(position);
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
 	MVP = Projection * View * T * R * S;
+	//vec4 pp = Projection*View*vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	//printf("%f,%f,%f,%f\n", pp.x, pp.y, pp.z, pp.w);
+	//printf("%f,%f\n", pp.x / pp.w, pp.y / pp.w);
 	float main_color[4]{ 1.0f, 0.0f, 1.0f, 1.0f };
 
 	draw_snowflake(MVP, main_color);
+
+	// Draw Pillar
 
 	glDisableVertexAttribArray(0);
 	glEnableVertexAttribArray(0);
@@ -281,14 +303,26 @@ void draw_model()
 	T = glm::translate(position);
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
+	// View Point
+	View = glm::lookAt(
+		glm::vec3(xy, 2),
+		glm::vec3(xy, 0),
+		glm::vec3(0, 1, 0));
+
 	MVP = Projection * View * T * R * S;
+
+	vec2 xycenter = vec2(Projection * View * vec4(position, 1.0f));
+	MVP = glm::translate(vec3(-xycenter/2.0f, 0.0f)) * MVP;
+	
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
-	float color[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	float color[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
+	//float color[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glUniform4fv(ColorID, 1, color);
 	glDrawArrays(GL_TRIANGLES, 0, pillar_vertex_buffer_data.size());
+	// End: Draw Pillar
 
 	glDisableVertexAttribArray(0);
 	//glDisableVertexAttribArray(1);
@@ -341,7 +375,7 @@ int main(int argc, char* argv[])
 	}
 	// END
 
-	Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+	Projection = glm::perspective(90.0f, 4.0f / 3.0f, 0.1f, 100.0f);
 	View = glm::lookAt(
 		glm::vec3(0, 0, 2),
 		glm::vec3(0, 0, 0),
@@ -350,7 +384,7 @@ int main(int argc, char* argv[])
 	glm::mat4 MVP = Projection * View * Model;
 
 	// DONE: Initialize OpenGL and GLSL
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.10f, 0.10f, 0.10f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glEnable(GL_BLEND);
@@ -361,7 +395,7 @@ int main(int argc, char* argv[])
 
 	glViewport(0, 0, width, height);
 	programID = LoadShaders("VertexShader.glsl", "FragmentShader.glsl");
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	//GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	// END
 
 	glfwSetWindowSizeCallback(window, window_size_callback);
