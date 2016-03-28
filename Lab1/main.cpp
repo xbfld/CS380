@@ -39,6 +39,9 @@ std::vector<glm::vec3> back_snowflakes_position;
 glm::mat4 Projection;
 glm::mat4 View;
 
+// fovy
+const float fovy = 45.0f;
+
 // snowflakes iteration steps
 const int snowflake_iter = 5;
 
@@ -337,7 +340,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 	float ratio = (float)width / (float)height;
 	// make min(fovx,fovy) be 45.0f
 	// and, fovy = fovx * height / width
-	Projection = glm::perspective(45.0f, ratio, 0.1f, 100.0f);
+	Projection = glm::perspective(fovy, ratio, 0.1f, 100.0f);
 	// glfwSetWindowSize(window, width, height);
 	printf("%f w: %d h: %d\n", glfwGetTime(), width, height);
 	printf("%f\n", 45.0f / (min(1.0f, ratio)));
@@ -375,7 +378,7 @@ int main(int argc, char* argv[])
 	}
 	// END
 
-	Projection = glm::perspective(90.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+	Projection = glm::perspective(fovy, 4.0f / 3.0f, 0.1f, 100.0f);
 	View = glm::lookAt(
 		glm::vec3(0, 0, 2),
 		glm::vec3(0, 0, 0),
