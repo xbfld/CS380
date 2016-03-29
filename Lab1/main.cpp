@@ -37,7 +37,11 @@ std::vector<glm::vec3> pillar_vertex_buffer_data;
 std::vector<glm::vec3> back_snowflakes_position;
 
 glm::mat4 Projection;
-glm::mat4 View;
+glm::mat4 View = glm::lookAt(
+	glm::vec3(0, 0, 2),
+	glm::vec3(0, 0, 0),
+	glm::vec3(0, 1, 0));
+glm::mat4 View_light;
 
 // fovy
 const float fovy = 45.0f;
@@ -79,6 +83,7 @@ void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 
 vec3 random_start_point()
 {
+	// take random float between (xrange[0], xrange[1]) and (yrange[0], yrange[1])
 	float x = (xrange[1] - xrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + xrange[0];
 	float y = (yrange[1] - yrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + yrange[0];
 	//printf("%f, %f", x, y);
@@ -207,27 +212,11 @@ void draw_model()
 	last_time = current_time;
 
 	degree += 60.0f * (float)delta_time;
-	//position += speed * (float)delta_time;
-	//if (position.x < -1.0f || position.x > 1.0f)
-	//{
-	//	speed = glm::reflect(speed, glm::vec3(1.0f, 0.0f, 0.0f));
-	//}
-	//if (position.y < -0.8f || position.y > 0.8f)
-	//{
-	//	speed = glm::reflect(speed, glm::vec3(0.0f, 1.0f, 0.0f));
-	//}
-
 
 	glm::mat4 T;
 	glm::mat4 R;
 	glm::mat4 S;
 	glm::mat4 MVP;
-
-	//Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
-	View = glm::lookAt(
-		glm::vec3(0, 0, 2),
-		glm::vec3(0, 0, 0),
-		glm::vec3(0, 1, 0));
 
 	// Draw background snowflake
 	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -267,13 +256,9 @@ void draw_model()
 	draw_snowflake(MVP, sub_color);
 
 	// Draw revolution snowflake
-	View = glm::lookAt(
-		glm::vec3(0, 0, 2),
-		glm::vec3(0, 0, 0),
-		glm::vec3(0, 1, 0));
 	T = glm::translate(
 		position
-		+ vec3(vec2(cos(radian*2.0f), - sin(radian*2.0f)) * radius * 0.5f, 0.01f)
+		+ vec3(vec2(cos(radian*2.0f), -sin(radian*2.0f)) * radius * 0.5f, 0.01f)
 		);
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(sub_size));
@@ -282,10 +267,6 @@ void draw_model()
 	draw_snowflake(MVP, revo_color);
 
 	// Draw main snowflake
-	View = glm::lookAt(
-		glm::vec3(0, 0, 2),
-		glm::vec3(0, 0, 0),
-		glm::vec3(0, 1, 0));
 	T = glm::translate(position);
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
@@ -307,16 +288,16 @@ void draw_model()
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
 	// View Point
-	View = glm::lookAt(
+	View_light = glm::lookAt(
 		glm::vec3(xy, 2),
 		glm::vec3(xy, 0),
 		glm::vec3(0, 1, 0));
 
-	MVP = Projection * View * T * R * S;
+	MVP = Projection * View_light * T * R * S;
 
-	vec2 xycenter = vec2(Projection * View * vec4(position, 1.0f));
-	MVP = glm::translate(vec3(-xycenter/2.0f, 0.0f)) * MVP;
-	
+	vec2 xycenter = vec2(Projection * View_light * vec4(position, 1.0f));
+	MVP = glm::translate(vec3(-xycenter / 2.0f, 0.0f)) * MVP;
+
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
 	float color[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
