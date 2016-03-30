@@ -28,6 +28,7 @@ GLuint programID;
 GLuint VAID;
 GLuint VBID;
 GLuint PillarID;
+GLuint WatcherID;
 GLuint colorbuffer;
 
 std::vector<glm::vec3> initial_triangle;
@@ -35,6 +36,7 @@ std::vector<glm::vec3> g_vertex_buffer_data;
 //std::vector<glm::vec3> g_color_buffer_data;
 std::vector<glm::vec3> pillar_vertex_buffer_data;
 std::vector<glm::vec3> back_snowflakes_position;
+std::vector<glm::vec3> watcher_vertex_buffer_data;
 
 glm::mat4 Projection;
 glm::mat4 View = glm::lookAt(
@@ -140,8 +142,27 @@ void init_model(void)
 	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], 0);
 	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], 0);
 
+	watcher_vertex_buffer_data.push_back(vec3(1.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(3.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, sqrt(3.0f), 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(1.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, -sqrt(3.0f), 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(3.0f, 0.0f, 0.0f));
 
+	watcher_vertex_buffer_data.push_back(vec3(-1.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, sqrt(3.0f), 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(-3.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(-1.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(-3.0f, 0.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, -sqrt(3.0f), 0.0f));
 
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, sqrt(3.0f), 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(-0.5f, sqrt(3.0f) / 2.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.5f, sqrt(3.0f) / 2.0f, 0.0f));
+
+	watcher_vertex_buffer_data.push_back(vec3(0.0f, -sqrt(3.0f), 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(0.5f, -sqrt(3.0f) / 2.0f, 0.0f));
+	watcher_vertex_buffer_data.push_back(vec3(-0.5f, -sqrt(3.0f) / 2.0f, 0.0f));
 
 	// Generates Vertex Array Objects in the GPU¡¯s memory and passes back their identifiers
 	// Create a vertex array object that represents vertex attributes stored in a vertex buffer object.
@@ -156,6 +177,10 @@ void init_model(void)
 	glGenBuffers(1, &PillarID);
 	glBindBuffer(GL_ARRAY_BUFFER, PillarID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*pillar_vertex_buffer_data.size(), &pillar_vertex_buffer_data[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &WatcherID);
+	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*watcher_vertex_buffer_data.size(), &watcher_vertex_buffer_data[0], GL_STATIC_DRAW);
 
 
 	/*g_color_buffer_data.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
@@ -175,16 +200,35 @@ void init_model(void)
 		back_snowflakes_position.push_back(random_start_point());
 	}
 
+
+
 }
 
-void draw_snowflake(glm::mat4 MVP, float color[])
+void draw_object(glm::mat4 MVP, float color[], std::vector<vec3> *buffer_data)
 {
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glUniform4fv(ColorID, 1, color);
-	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size());
+	glDrawArrays(GL_TRIANGLES, 0, (*buffer_data).size());
+}
+
+void draw_snowflake(glm::mat4 MVP, float color[])
+{
+	draw_object(MVP, color, &g_vertex_buffer_data);
+}
+
+
+void draw_pillar(glm::mat4 MVP, float color[])
+{
+	draw_object(MVP, color, &pillar_vertex_buffer_data);
+}
+
+
+void draw_watcher(glm::mat4 MVP, float color[])
+{
+	draw_object(MVP, color, &watcher_vertex_buffer_data);
 }
 
 // DONE: Draw model
@@ -298,15 +342,26 @@ void draw_model()
 	vec2 xycenter = vec2(Projection * View_light * vec4(position, 1.0f));
 	MVP = glm::translate(vec3(-xycenter / 2.0f, 0.0f)) * MVP;
 
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint ColorID = glGetUniformLocation(programID, "vcolor");
-	float color[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
-	//float color[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	float black[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
 
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniform4fv(ColorID, 1, color);
-	glDrawArrays(GL_TRIANGLES, 0, pillar_vertex_buffer_data.size());
+	draw_pillar(MVP, black);
+
 	// End: Draw Pillar
+
+	// Draw Watcher
+	glDisableVertexAttribArray(0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+	T = glm::translate(position);
+	S = glm::scale(glm::vec3(main_size));
+	MVP = Projection * View * T * S;
+
+	float gray[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	
+	draw_watcher(MVP, gray);
+
 
 	glDisableVertexAttribArray(0);
 	//glDisableVertexAttribArray(1);
