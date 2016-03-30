@@ -38,6 +38,8 @@ std::vector<glm::vec3> pillar_vertex_buffer_data;
 std::vector<glm::vec3> back_snowflakes_position;
 std::vector<glm::vec3> watcher_vertex_buffer_data;
 
+std::vector<float> back_snowflakes_phase;
+
 glm::mat4 Projection;
 glm::mat4 View = glm::lookAt(
 	glm::vec3(0, 0, 2),
@@ -55,14 +57,13 @@ const int snowflake_iter = 5;
 const int back_snowflake_number = 100;
 const float xrange[2]{ -1.0f,1.0f };
 const float yrange[2]{ -1.0f,1.0f };
-const float lifespan = 2.0f;
+const float snow_lifetime = 2.0f;
 const float speed = 1.0f;
-float snowflakes_phase = 0.0f;
 glm::mat4 R_frame = glm::rotate(30.0f, glm::vec3(0, 0, 1));
 
 // Using on objects positions
 float back_size = 0.1f;
-float sub_size = 0.2f;
+float sub_size = 0.05f;
 float main_size = 0.3f;
 
 float degree = 0.0f;
@@ -83,13 +84,26 @@ void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 	(*buffer_data).push_back(glm::vec3(b, top));
 }
 
+// take random float number between (min, max)
+float random_range(float min, float max)
+{
+	return (max - min) * ((((float)rand()) / (float)RAND_MAX)) + min;
+}
+
+float random_normal()
+{
+	return random_range(-1.0f, 1.0f);
+}
+
+vec2 random_normal_vec2()
+{
+	return vec2(random_normal(), random_normal());
+}
+
 vec3 random_start_point()
 {
-	// take random float between (xrange[0], xrange[1]) and (yrange[0], yrange[1])
-	float x = (xrange[1] - xrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + xrange[0];
-	float y = (yrange[1] - yrange[0]) * ((((float)rand()) / (float)RAND_MAX)) + yrange[0];
-	//printf("%f, %f", x, y);
-	return vec3(x, y + speed * lifespan / 2.0f, 0.0f);
+	vec2 random_center = random_normal_vec2();
+	return vec3(random_center, -0.01f) + vec3(0.0f, 0.0f + speed * snow_lifetime / 2.0f, 0.0f);
 }
 
 // DONE: Implement koch snowflake
@@ -115,11 +129,11 @@ void koch_line(glm::vec3 a, glm::vec3 b, int iter)
 		koch_line(points[1], points[2], iter + 1);
 		koch_line(points[2], b, iter + 1);
 	}
-	if (iter == 3)
+	/*if (iter == 3)
 	{
 		wall(glm::vec2(a), glm::vec2(points[1]), &pillar_vertex_buffer_data);
 		wall(glm::vec2(points[1]), glm::vec2(b), &pillar_vertex_buffer_data);
-	}
+	}*/
 	points.clear();
 
 }
@@ -141,6 +155,23 @@ void init_model(void)
 	koch_line(g_vertex_buffer_data[0], g_vertex_buffer_data[1], 0);
 	koch_line(g_vertex_buffer_data[1], g_vertex_buffer_data[2], 0);
 	koch_line(g_vertex_buffer_data[2], g_vertex_buffer_data[0], 0);
+
+	srand(time(NULL)); // seeding a random function
+	vec2 random_center;
+	float random_radian;
+	for (size_t i = 0; i < 10; i++)
+	{
+		random_center = random_normal_vec2();
+		random_radian = random_range(0.0f, 120.0f);
+		printf("%f,%f\n", random_center.x, random_center.y);
+		printf("%f,%f\n", random_center.x, random_center.y);
+		vec2 a = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian) + random_center;
+		vec2 b = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 120.0f) + random_center;
+		vec2 c = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 240.0f) + random_center;
+		wall(a, b, &pillar_vertex_buffer_data);
+		wall(b, c, &pillar_vertex_buffer_data);
+		wall(c, a, &pillar_vertex_buffer_data);
+	}
 
 	watcher_vertex_buffer_data.push_back(vec3(1.0f, 0.0f, 0.0f));
 	watcher_vertex_buffer_data.push_back(vec3(3.0f, 0.0f, 0.0f));
@@ -198,9 +229,8 @@ void init_model(void)
 	for (size_t i = 0; i < back_snowflake_number; i++)
 	{
 		back_snowflakes_position.push_back(random_start_point());
+		back_snowflakes_phase.push_back((float)i / back_snowflake_number);
 	}
-
-
 
 }
 
@@ -219,12 +249,10 @@ void draw_snowflake(glm::mat4 MVP, float color[])
 	draw_object(MVP, color, &g_vertex_buffer_data);
 }
 
-
 void draw_pillar(glm::mat4 MVP, float color[])
 {
 	draw_object(MVP, color, &pillar_vertex_buffer_data);
 }
-
 
 void draw_watcher(glm::mat4 MVP, float color[])
 {
@@ -234,12 +262,6 @@ void draw_watcher(glm::mat4 MVP, float color[])
 // DONE: Draw model
 void draw_model()
 {
-	glUseProgram(programID);
-	glBindVertexArray(VAID);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBID);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-
 	//glEnableVertexAttribArray(1);
 	//glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
 	//glVertexAttribPointer(
@@ -263,29 +285,38 @@ void draw_model()
 	glm::mat4 MVP;
 
 	// Draw background snowflake
+	glUseProgram(programID);
+	glBindVertexArray(VAID);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, VBID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
 	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
-	snowflakes_phase += delta_time;
-	if (lifespan < snowflakes_phase)
-	{
-		snowflakes_phase -= lifespan;
-		for (size_t i = 0; i < back_snowflake_number; i++)
-		{
-			back_snowflakes_position[i] = random_start_point();
-		}
-	}
 	for (size_t i = 0; i < back_snowflake_number; i++)
 	{
-		T = glm::translate(back_snowflakes_position[i] + vec3(0.0f, -speed, 0.0f)*snowflakes_phase);
+		float *phase = &back_snowflakes_phase[i];
+		vec3 *pos = &back_snowflakes_position[i];
+		(*phase) += delta_time / snow_lifetime;
+		if (1.0f < (*phase))
+		{
+			(*phase) -= 1.0f;
+			(*pos) = random_start_point();
+		}
+		T = glm::translate((*pos) + vec3(0.0f, -speed, 0.0f) * (*phase));
 		R = glm::rotate(degree*1.3f, glm::vec3(0, 0, 1));
 		S = glm::scale(glm::vec3(back_size)
-			*(snowflakes_phase)*(lifespan - snowflakes_phase)*4.0f / lifespan / lifespan); // back_size is Max size
+			* (*phase) * (1.0f - (*phase))*4.0f); // back_size is Max size
 		MVP = Projection * View * R_frame * T * R * S;
 		draw_snowflake(MVP, white_color);
 	}
 
 
-	// Draw sub snowflake
-	float sub_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
+	// Draw sub watcher
+	glDisableVertexAttribArray(0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	float sub_color[4]{ 1.0f, 1.0f, 0.0f, 1.0f };
 	float radius = 0.8f;
 	float radian = radians(degree);
 	vec2 xy = vec2(cos(radian), sin(radian*1.2)) * radius;
@@ -297,9 +328,14 @@ void draw_model()
 	S = glm::scale(glm::vec3(sub_size));
 	MVP = Projection * View * T * S;
 
-	draw_snowflake(MVP, sub_color);
+	draw_watcher(MVP, sub_color);
 
 	// Draw revolution snowflake
+	glUseProgram(programID);
+	glBindVertexArray(VAID);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, VBID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	T = glm::translate(
 		position
 		+ vec3(vec2(cos(radian*2.0f), -sin(radian*2.0f)) * radius * 0.5f, 0.01f)
@@ -307,10 +343,15 @@ void draw_model()
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(sub_size));
 	MVP = Projection * View * T * R * S;
-	float revo_color[4]{ 1.0f, 1.0f, 0.0f, 1.0f };
+	float revo_color[4]{ 0.0f, 1.0f, 1.0f, 1.0f };
 	draw_snowflake(MVP, revo_color);
 
 	// Draw main snowflake
+	glUseProgram(programID);
+	glBindVertexArray(VAID);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, VBID);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	T = glm::translate(position);
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
@@ -329,8 +370,8 @@ void draw_model()
 	glBindBuffer(GL_ARRAY_BUFFER, PillarID);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	T = glm::translate(position);
-	R = glm::rotate(degree, glm::vec3(0, 0, 1));
-	S = glm::scale(glm::vec3(main_size));
+	R = glm::mat4();
+	S = glm::scale(glm::vec3(1.0f));
 	// View Point
 	View_light = glm::lookAt(
 		glm::vec3(xy, 2),
@@ -359,7 +400,7 @@ void draw_model()
 	MVP = Projection * View * T * S;
 
 	float gray[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
-	
+
 	draw_watcher(MVP, gray);
 
 
@@ -456,6 +497,7 @@ int main(int argc, char* argv[])
 	g_vertex_buffer_data.clear();
 	pillar_vertex_buffer_data.clear();
 	back_snowflakes_position.clear();
+	back_snowflakes_phase.clear();
 
 	glDeleteBuffers(1, &PillarID);
 	glDeleteBuffers(1, &VBID);
