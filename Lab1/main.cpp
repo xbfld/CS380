@@ -73,6 +73,7 @@ glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 // Pillar
 float top = 20.0f;
 float bottom = -0.01f;
+int pillar_number = 20;
 
 void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 {
@@ -159,7 +160,7 @@ void init_model(void)
 	srand(time(NULL)); // seeding a random function
 	vec2 random_center;
 	float random_radian;
-	for (size_t i = 0; i < 10; i++)
+	for (size_t i = 0; i < pillar_number; i++)
 	{
 		random_center = random_normal_vec2();
 		random_radian = random_range(0.0f, 120.0f);
@@ -168,6 +169,9 @@ void init_model(void)
 		vec2 a = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian) + random_center;
 		vec2 b = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 120.0f) + random_center;
 		vec2 c = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 240.0f) + random_center;
+		pillar_vertex_buffer_data.push_back(vec3(a, 0.10f));
+		pillar_vertex_buffer_data.push_back(vec3(b, 0.10f));
+		pillar_vertex_buffer_data.push_back(vec3(c, 0.10f));
 		wall(a, b, &pillar_vertex_buffer_data);
 		wall(b, c, &pillar_vertex_buffer_data);
 		wall(c, a, &pillar_vertex_buffer_data);
@@ -316,7 +320,7 @@ void draw_model()
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-	float sub_color[4]{ 1.0f, 1.0f, 0.0f, 1.0f };
+	float sub_color[4]{ 0.3f, 1.0f, 0.7f, 1.0f };
 	float radius = 0.8f;
 	float radian = radians(degree);
 	vec2 xy = vec2(cos(radian), sin(radian*1.2)) * radius;
@@ -359,7 +363,7 @@ void draw_model()
 	//vec4 pp = Projection*View*vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	//printf("%f,%f,%f,%f\n", pp.x, pp.y, pp.z, pp.w);
 	//printf("%f,%f\n", pp.x / pp.w, pp.y / pp.w);
-	float main_color[4]{ 1.0f, 0.0f, 1.0f, 1.0f };
+	float main_color[4]{ 0.5f, 0.7f, 0.8f, 1.0f };
 
 	draw_snowflake(MVP, main_color);
 
