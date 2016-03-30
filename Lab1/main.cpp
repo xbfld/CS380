@@ -85,12 +85,13 @@ void wall(glm::vec2 a, glm::vec2 b, std::vector<vec3> *buffer_data)
 	(*buffer_data).push_back(glm::vec3(b, top));
 }
 
-// take random float number between (min, max)
+// Random float between min to max
 float random_range(float min, float max)
 {
 	return (max - min) * ((((float)rand()) / (float)RAND_MAX)) + min;
 }
 
+// Random float between -1.0f to 1.0f
 float random_normal()
 {
 	return random_range(-1.0f, 1.0f);
@@ -130,11 +131,7 @@ void koch_line(glm::vec3 a, glm::vec3 b, int iter)
 		koch_line(points[1], points[2], iter + 1);
 		koch_line(points[2], b, iter + 1);
 	}
-	/*if (iter == 3)
-	{
-		wall(glm::vec2(a), glm::vec2(points[1]), &pillar_vertex_buffer_data);
-		wall(glm::vec2(points[1]), glm::vec2(b), &pillar_vertex_buffer_data);
-	}*/
+
 	points.clear();
 
 }
@@ -164,8 +161,6 @@ void init_model(void)
 	{
 		random_center = random_normal_vec2();
 		random_radian = random_range(0.0f, 120.0f);
-		printf("%f,%f\n", random_center.x, random_center.y);
-		printf("%f,%f\n", random_center.x, random_center.y);
 		vec2 a = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian) + random_center;
 		vec2 b = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 120.0f) + random_center;
 		vec2 c = 0.1f * glm::rotate(vec2(1.0f, 0.0f), random_radian + 240.0f) + random_center;
@@ -177,6 +172,7 @@ void init_model(void)
 		wall(c, a, &pillar_vertex_buffer_data);
 	}
 
+	// Watcher Model
 	watcher_vertex_buffer_data.push_back(vec3(1.0f, 0.0f, 0.0f));
 	watcher_vertex_buffer_data.push_back(vec3(3.0f, 0.0f, 0.0f));
 	watcher_vertex_buffer_data.push_back(vec3(0.0f, sqrt(3.0f), 0.0f));
@@ -217,15 +213,7 @@ void init_model(void)
 	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*watcher_vertex_buffer_data.size(), &watcher_vertex_buffer_data[0], GL_STATIC_DRAW);
 
-
-	/*g_color_buffer_data.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-	g_color_buffer_data.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
-	g_color_buffer_data.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
-
-	glGenBuffers(1, &colorbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*g_color_buffer_data.size(), &g_color_buffer_data[0], GL_STATIC_DRAW);*/
-
+	// init time
 	last_time = glfwGetTime();
 
 	// init background snowflake
@@ -266,17 +254,6 @@ void draw_watcher(glm::mat4 MVP, float color[])
 // DONE: Draw model
 void draw_model()
 {
-	//glEnableVertexAttribArray(1);
-	//glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-	//glVertexAttribPointer(
-	//	1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-	//	3,                                // size
-	//	GL_FLOAT,                         // type
-	//	GL_FALSE,                         // normalized?
-	//	0,                                // stride
-	//	(void*)0                          // array buffer offset
-	//	);
-
 	double current_time = glfwGetTime();
 	double delta_time = current_time - last_time;
 	last_time = current_time;
@@ -296,6 +273,8 @@ void draw_model()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
 	float white_color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+	// update all back snowflakes
 	for (size_t i = 0; i < back_snowflake_number; i++)
 	{
 		float *phase = &back_snowflakes_phase[i];
@@ -314,8 +293,7 @@ void draw_model()
 		draw_snowflake(MVP, white_color);
 	}
 
-
-	// Draw sub watcher
+	// Draw Watcher
 	glDisableVertexAttribArray(0);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
@@ -360,15 +338,11 @@ void draw_model()
 	R = glm::rotate(degree, glm::vec3(0, 0, 1));
 	S = glm::scale(glm::vec3(main_size));
 	MVP = Projection * View * T * R * S;
-	//vec4 pp = Projection*View*vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	//printf("%f,%f,%f,%f\n", pp.x, pp.y, pp.z, pp.w);
-	//printf("%f,%f\n", pp.x / pp.w, pp.y / pp.w);
 	float main_color[4]{ 0.5f, 0.7f, 0.8f, 1.0f };
 
 	draw_snowflake(MVP, main_color);
 
 	// Draw Pillar
-
 	glDisableVertexAttribArray(0);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, PillarID);
@@ -376,7 +350,7 @@ void draw_model()
 	T = glm::translate(position);
 	R = glm::mat4();
 	S = glm::scale(glm::vec3(1.0f));
-	// View Point
+	// View Point over Watcher
 	View_light = glm::lookAt(
 		glm::vec3(xy, 2),
 		glm::vec3(xy, 0),
@@ -385,15 +359,15 @@ void draw_model()
 	MVP = Projection * View_light * T * R * S;
 
 	vec2 xycenter = vec2(Projection * View_light * vec4(position, 1.0f));
+	// Translate the clip space
 	MVP = glm::translate(vec3(-xycenter / 2.0f, 0.0f)) * MVP;
 
 	float black[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
 
 	draw_pillar(MVP, black);
-
 	// End: Draw Pillar
 
-	// Draw Watcher
+	// Draw back Watcher
 	glDisableVertexAttribArray(0);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, WatcherID);
@@ -419,12 +393,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 
 	float ratio = (float)width / (float)height;
-	// make min(fovx,fovy) be 45.0f
-	// and, fovy = fovx * height / width
 	Projection = glm::perspective(fovy, ratio, 0.1f, 100.0f);
-	// glfwSetWindowSize(window, width, height);
-	printf("%f w: %d h: %d\n", glfwGetTime(), width, height);
-	printf("%f\n", 45.0f / (min(1.0f, ratio)));
 }
 
 
