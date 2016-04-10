@@ -10,6 +10,7 @@ Model::Model()
 {
 	// Initialize model information
 	vertices = std::vector<glm::vec3>();
+	indices = std::vector<unsigned int>();
 	normals = std::vector<glm::vec3>();
 	colors = std::vector<glm::vec3>();
 }
@@ -44,6 +45,11 @@ void Model::add_color(glm::vec3 color)
 	colors.push_back(color);
 }
 
+void Model::add_index(unsigned int idx)
+{
+	indices.push_back(idx);
+}
+
 void Model::set_projection(glm::mat4* projection)
 {
 	this->Projection = projection;
@@ -59,29 +65,40 @@ void Model::set_model(glm::mat4* model)
 	this->ModelTransform = model;
 }
 
-void Model::initialize(const char * vertexShader_path, const char * fragmentShader_path)
+void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const char * fragmentShader_path)
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
+	this->type = type;
+
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
 
 	glGenBuffers(1, &this->VertexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->vertices.size()+sizeof(glm::vec3)*this->normals.size(), NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3)*this->vertices.size(), &this->vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->vertices.size(), sizeof(glm::vec3)*this->normals.size(), &this->normals[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->vertices.size(), &this->vertices[0], GL_STATIC_DRAW);
+
+	if (this->type == DRAW_TYPE::INDEX)
+	{
+		glGenBuffers(1, &this->IndexBufferID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->IndexBufferID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*this->indices.size(), &this->indices[0], GL_STATIC_DRAW);
+	}
+
+	glGenBuffers(1, &this->NormalBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->normals.size(), &this->normals[0], GL_STATIC_DRAW);
 
 	glGenBuffers(1, &this->ColorBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, this->ColorBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->colors.size(), &this->colors[0], GL_STATIC_DRAW);	
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->colors.size(), &this->colors[0], GL_STATIC_DRAW);
 }
 
 void Model::draw()
 {
 	glUseProgram(this->GLSLProgramID);
-	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
-	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
-	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
+	GLint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
+	GLint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
+	GLint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
 
 	glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 	glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
@@ -94,16 +111,20 @@ void Model::draw()
 
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(sizeof(glm::vec3)*this->vertices.size())));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
 	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, this->ColorBufferID);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
-	glDrawArrays(GL_TRIANGLES, 0, this->vertices.size());
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	if (this->type == DRAW_TYPE::ARRAY)
+	{
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei) this->vertices.size());
+	}
+	else {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->IndexBufferID);
+		glDrawElements(GL_TRIANGLES, (GLsizei) this->indices.size(), GL_UNSIGNED_INT, ((GLvoid *)0));
+	}
 }
 
 void Model::cleanup()
@@ -112,15 +133,24 @@ void Model::cleanup()
 	this->vertices.clear();
 	this->vertices.shrink_to_fit();
 
+	this->indices.clear();
+	this->indices.shrink_to_fit();
+
 	this->normals.clear();
 	this->normals.shrink_to_fit();
 
 	this->colors.clear();
 	this->colors.shrink_to_fit();
 
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+
 	// Cleanup VBO and shader
 	glDeleteBuffers(1, &this->VertexBufferID);
+	glDeleteBuffers(1, &this->NormalBufferID);
 	glDeleteBuffers(1, &this->ColorBufferID);
+	if (this->type == DRAW_TYPE::INDEX) glDeleteBuffers(1, &this->IndexBufferID);
 	glDeleteProgram(this->GLSLProgramID);
 	glDeleteVertexArrays(1, &this->VertexArrayID);
 }
