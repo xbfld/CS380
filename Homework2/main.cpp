@@ -404,7 +404,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Homework 2: ", NULL, NULL);
+	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Homework 2: 20130156 김준", NULL, NULL);
 	if (window == NULL) {
 		glfwTerminate();
 		return -1;
