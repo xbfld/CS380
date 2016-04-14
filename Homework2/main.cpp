@@ -68,6 +68,12 @@ double last_xpos = 0.0f;
 double last_ypos = 0.0f;
 glm::mat4 *target_objectRBT = &skyRBT;
 
+bool screen_drag_mode = false;
+
+int creative_mode = 0;
+int creative_max = 5;
+int cx = 0;
+int cy = 0;
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
 void update_fovy()
@@ -84,10 +90,6 @@ void update_fovy()
 
 void update_aFrame()
 {
-	/*if ((0 == viewpoint_mode) && (0 == object_mode) && (0 == world_sky_mode))
-	{
-		aFrame = transFact(worldRBT)*linearFact(eyeRBT);
-	}*/
 	aFrame = transFact(*arcballCenterRBT)*linearFact(eyeRBT);
 }
 
@@ -125,14 +127,14 @@ void update_arcBallRBT()
 	arcballRBT = *arcballCenterRBT * glm::scale(vec3(arcBallScale * arcBallScreenRadius));
 }
 
-vec3 get_target_center()
+vec3 get_arcball_center()
 {
-	return vec3(transFact(glm::inverse(eyeRBT)* *target_objectRBT)[3]);
+	return vec3(transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3]);
 }
 
 quat get_arcball_quat(double x, double y)
 {
-	vec2 arc_screen_center = eye_to_screen(get_target_center(), Projection, frameBufferWidth, frameBufferHeight);
+	vec2 arc_screen_center = eye_to_screen(get_arcball_center(), Projection, frameBufferWidth, frameBufferHeight);
 	vec2 d_pos = vec2(x, y) - arc_screen_center;
 	double _z = pow(arcBallScreenRadius, 2.0f) - glm::dot(d_pos, d_pos);
 	_z = (_z < 0) ? 0 : sqrt(_z);
@@ -167,6 +169,8 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 
 	// Update arcball radius
 	arcBallScreenRadius = 0.25f * min((float)frameBufferWidth, (float)frameBufferHeight);
+	update_arcBallScale();
+	update_arcBallRBT();
 }
 
 // TODO: Fill up GLFW mouse button callback function
@@ -183,6 +187,11 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			press_mouse = button;
 			glfwGetCursorPos(window, &last_xpos, &last_ypos);
 			update_aFrame();
+
+			if (mods == 2)
+			{
+				screen_drag_mode = true;
+			}
 		}
 	}
 	else
@@ -191,6 +200,8 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		{
 			press_mouse = -1;
 			update_arcBallScale();
+			update_arcBallRBT();
+			screen_drag_mode = false;
 		}
 	}
 }
@@ -204,6 +215,10 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	quat cur_quat;
 	quat d_quat;
 	mat4 manipulate = mat4(1.0f);
+	if ((object_mode == 0) && (viewpoint_mode != 0))
+	{
+		return;
+	}
 	switch (press_mouse)
 	{
 	case -1:
@@ -211,29 +226,51 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	case GLFW_MOUSE_BUTTON_1:
 		// Left Mouse Button Pressed
 		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
-		if (viewpoint_mode != object_mode)
+		if (screen_drag_mode)
 		{
-			last_quat = get_arcball_quat(last_xpos, frameBufferHeight - 1 - last_ypos);
-			cur_quat = get_arcball_quat(xpos, frameBufferHeight - 1 - ypos);
-			d_quat = cur_quat*inverse(last_quat);
-			manipulate = glm::toMat4(d_quat);
+			int wx, wy;
+			glfwGetWindowPos(window, &wx, &wy);
+			int _x = (int)d_x - cx;
+			int _y = (int)d_y - cy;
+			cx = -_x;
+			cy = -_y;
+			wx -= cx;
+			wy -= cy;
+			glfwSetWindowPos(window, wx, wy);
+
 		}
 		else
 		{
-			double x_rad = d_x / arcBallScreenRadius;
-			double y_rad = d_y / arcBallScreenRadius;
-			manipulate = glm::toMat4(quat(cos(-y_rad), vec3(sin(-y_rad), 0.0f, 0.0f))*quat(cos(x_rad), vec3(0.0f, x_rad, 0.0f)));
+			if ((viewpoint_mode != object_mode)
+				|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
+			{
+				last_quat = get_arcball_quat(last_xpos, frameBufferHeight - 1 - last_ypos);
+				cur_quat = get_arcball_quat(xpos, frameBufferHeight - 1 - ypos);
+				d_quat = cur_quat*inverse(last_quat);
+				manipulate = glm::toMat4(d_quat);
+			}
+			else
+			{
+				double x_rad = d_x / arcBallScreenRadius;
+				double y_rad = d_y / arcBallScreenRadius;
+				manipulate = glm::toMat4(quat(cos(-y_rad), vec3(sin(-y_rad), 0.0f, 0.0f))*quat(cos(x_rad), vec3(0.0f, x_rad, 0.0f)));
 
-			manipulate = inverse(manipulate);
+				manipulate = inverse(manipulate);
+			}
+			if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+			{
+				manipulate = inverse(manipulate);
+			}
+			*target_objectRBT = aFrame * manipulate * glm::inverse(aFrame) * *target_objectRBT;
 		}
-		*target_objectRBT = aFrame * manipulate * glm::inverse(aFrame) * *target_objectRBT;
 		last_xpos = xpos;
 		last_ypos = ypos;
 		break;
 	case GLFW_MOUSE_BUTTON_2:
 		// Right Mouse Button Pressed
 		printf("cursor pos callbakc: Right, %f, %f\n", xpos, ypos);
-		if (viewpoint_mode != object_mode)
+		if ((viewpoint_mode != object_mode)
+			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
 		{
 			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) * arcBallScale);
 		}
@@ -241,20 +278,60 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		{
 			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) / arcBallScreenRadius);
 		}
+		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+		{
+			manipulate = inverse(manipulate);
+		}
 		*target_objectRBT = aFrame * manipulate * glm::inverse(aFrame) * *target_objectRBT;
+
+		if (creative_mode!=0)
+		{
+			int wx, wy;
+			glfwGetWindowPos(window, &wx, &wy);
+			int _x = (int)d_x - cx;
+			int _y = (int)d_y - cy;
+
+			switch (creative_mode)
+			{
+			case 1:
+				cx = -_x;
+				cy = -_y;
+				break;
+			case 3:
+				cx = _x;
+				cy = _y;
+				break;
+			case 5:
+				cx = -_y;
+				cy = _x;
+				break;
+			default:
+				cx = 0;
+				cy = 0;
+				break;
+			}
+			wx -= cx;
+			wy -= cy;
+			glfwSetWindowPos(window, wx, wy);
+		}
 		last_xpos = xpos;
 		last_ypos = ypos;
 		break;
 	case GLFW_MOUSE_BUTTON_3:
 		// Middle Mouse Button Pressed
 		printf("cursor pos callbakc: Middle, %f, %f\n", xpos, ypos);
-		if (viewpoint_mode != object_mode)
+		if ((viewpoint_mode != object_mode)
+			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
 		{
 			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) * arcBallScale);
 		}
 		else
 		{
 			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) / arcBallScreenRadius);
+		}
+		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+		{
+			manipulate = inverse(manipulate);
 		}
 		*target_objectRBT = aFrame * manipulate * glm::inverse(aFrame) * *target_objectRBT;
 		last_xpos = xpos;
@@ -301,6 +378,8 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 					break;
 				}
 				update_eye();
+				update_arcBallScale();
+				update_arcBallRBT();
 
 				break;
 			case GLFW_KEY_O:
@@ -335,6 +414,7 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 						}
 						else
 						{
+							arcballCenterRBT = &skyRBT;
 							printf("object_mode: sky-sky\n");
 						}
 					}
@@ -362,12 +442,25 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 					else
 					{
 						world_sky_mode = !world_sky_mode;
+						arcballCenterRBT = &skyRBT;
 						printf("object_mode: sky-sky\n");
 					}
 				}
 				break;
 			case GLFW_KEY_C:
-				// TODO: Add an additional manipulation method
+				// DONE: Add an additional manipulation method
+				if (creative_mode >= creative_max)
+				{
+					creative_mode = 0;
+					printf("creative_mode: off\n");
+				}
+				else
+				{
+					creative_mode +=1;
+					cx = 0;
+					cy = 0;
+					printf("creative_mode: %d\n",creative_mode);
+				}
 				break;
 			default:
 				break;
@@ -471,7 +564,7 @@ int main(void)
 	greenCube.set_eye(&eyeRBT);
 	greenCube.set_model(&g_objectRbt[1]);
 
-	// TODO: Initialize arcBall
+	// DONE: Initialize arcBall
 	// Initialize your arcBall with DRAW_TYPE::INDEX (it uses GL_ELEMENT_ARRAY_BUFFER to draw sphere)
 	arcBall = Model();
 	init_sphere(arcBall);
@@ -504,14 +597,13 @@ int main(void)
 
 		// DONE: Change Viewpoint with respect to your current view index
 		update_eye();
-		update_aFrame();
 
 		redCube.draw();
 		greenCube.draw();
 		ground.draw();
 
 		// DONE: Draw wireframe of arcball with dynamic radius
-		if ((object_mode != viewpoint_mode)
+		if ((object_mode != 0)
 			|| ((viewpoint_mode == 0) && (world_sky_mode)))
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
