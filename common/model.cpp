@@ -65,11 +65,16 @@ void Model::set_model(glm::mat4* model)
 	this->ModelTransform = model;
 }
 
+glm::mat4* Model::get_model()
+{
+	return this->ModelTransform;
+}
+
 void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const char * fragmentShader_path)
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
-
+	
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
 
@@ -93,12 +98,17 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->colors.size(), &this->colors[0], GL_STATIC_DRAW);
 }
 
+void Model::initialize_picking(const char* picking_vertex_shader, const char* picking_fragment_shader)
+{
+	this->PickingProgramID = LoadShaders(picking_vertex_shader, picking_fragment_shader);
+}
+
 void Model::draw()
 {
 	glUseProgram(this->GLSLProgramID);
-	GLint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
-	GLint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
-	GLint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
+	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
+	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
+	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
 
 	glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 	glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
@@ -124,6 +134,43 @@ void Model::draw()
 	else {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->IndexBufferID);
 		glDrawElements(GL_TRIANGLES, (GLsizei) this->indices.size(), GL_UNSIGNED_INT, ((GLvoid *)0));
+	}
+}
+
+void Model::drawPicking()
+{
+	if (this->objectID >= 0) 
+	{
+		glUseProgram(this->PickingProgramID);
+		GLuint ProjectionID = glGetUniformLocation(this->PickingProgramID, "Projection");
+		GLuint EyeID = glGetUniformLocation(this->PickingProgramID, "Eye");
+		GLuint ModelTransformID = glGetUniformLocation(this->PickingProgramID, "ModelTransform");
+		GLuint objectIDLoc = glGetUniformLocation(this->PickingProgramID, "objectID");
+
+		glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
+		glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
+		glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
+		
+		float r = ((objectID >> 16) & 0xFF) / 255.0f;
+		float g = ((objectID >> 8) & 0xFF) / 255.0f;
+		float b = (objectID & 0xFF) / 255.0f;
+
+		glm::vec3 objectIDVector = glm::vec3(r,g,b);
+		glUniform3f(objectIDLoc, objectIDVector.x, objectIDVector.y, objectIDVector.z);
+
+		glBindVertexArray(this->VertexArrayID);
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, this->VertexBufferID);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
+
+		if (this->type == DRAW_TYPE::ARRAY)
+		{
+			glDrawArrays(GL_TRIANGLES, 0, (GLsizei) this->vertices.size());
+		}
+		else {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->IndexBufferID);
+			glDrawElements(GL_TRIANGLES, (GLsizei) this->indices.size(), GL_UNSIGNED_INT, ((GLvoid *)0));
+		}
 	}
 }
 

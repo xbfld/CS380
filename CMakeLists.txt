@@ -47,24 +47,27 @@ add_definitions(
   -D_CRT_SECURE_NO_WARNINGS
 )
 
-# Project 2: Object manipulation with arcball
-add_executable(Homework2
-	Homework2/main.cpp
+# Homework 3: 3x3x1 Rubic cube simulation
+add_executable(Homework3
+	Homework3/main.cpp
 	common/shader.cpp
 	common/shader.hpp
-  common/model.cpp
-  common/model.hpp
+	common/model.cpp
+	common/model.hpp
 	common/geometry.hpp
 	common/affine.hpp
-	common/arcball.hpp
-	Homework2/VertexShader.glsl
-	Homework2/FragmentShader.glsl
+	common/arcball.hpp # arcball helper function
+	common/picking.hpp # picking helper function
+	Homework3/VertexShader.glsl
+	Homework3/FragmentShader.glsl
+	Homework3/PickingVertexShader.glsl
+	Homework3/PickingFragmentShader.glsl
 )
-target_link_libraries(Homework2
+target_link_libraries(Homework3
   ${ALL_LIBS}
 )
 
 # Xcode and Visual Studio working directories
-set_target_properties(Homework2 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR
- "${CMAKE_CURRENT_SOURCE_DIR}/Homework2/")
-create_target_launcher(Homework2 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Homework2/")
+set_target_properties(Homework3 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR
+ "${CMAKE_CURRENT_SOURCE_DIR}/Homework3/")
+create_target_launcher(Homework3 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Homework3/")
