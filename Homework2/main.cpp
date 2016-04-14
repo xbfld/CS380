@@ -284,7 +284,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		}
 		*target_objectRBT = aFrame * manipulate * glm::inverse(aFrame) * *target_objectRBT;
 
-		if (creative_mode!=0)
+		if (creative_mode != 0)
 		{
 			int wx, wy;
 			glfwGetWindowPos(window, &wx, &wy);
@@ -404,19 +404,16 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 					{
 						printf("It is not allowed modifying the sky camera when the current camera view is a cube view.\n");
 					}
+					target_objectRBT = &skyRBT;
+					if (world_sky_mode)
+					{
+						arcballCenterRBT = &worldRBT;
+						printf("object_mode: world-sky\n");
+					}
 					else
 					{
-						target_objectRBT = &skyRBT;
-						if (world_sky_mode)
-						{
-							arcballCenterRBT = &worldRBT;
-							printf("object_mode: world-sky\n");
-						}
-						else
-						{
-							arcballCenterRBT = &skyRBT;
-							printf("object_mode: sky-sky\n");
-						}
+						arcballCenterRBT = &skyRBT;
+						printf("object_mode: sky-sky\n");
 					}
 					break;
 				default:
@@ -456,10 +453,10 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 				}
 				else
 				{
-					creative_mode +=1;
+					creative_mode += 1;
 					cx = 0;
 					cy = 0;
-					printf("creative_mode: %d\n",creative_mode);
+					printf("creative_mode: %d\n", creative_mode);
 				}
 				break;
 			default:
