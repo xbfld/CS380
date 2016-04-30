@@ -142,12 +142,11 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	}
 }
 
-// Helper function: Return index of piece
+// Helper function: Return index of Rubix piece
 int rubix_index(int w, int h, int d)
 {
 	return w + rubix_w * (h + rubix_h * d);
 }
-
 
 // Initialize Rubix Model
 // Setting Light Vector
@@ -159,6 +158,8 @@ void rubix_setup()
 		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 1.0),
 		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
 
+	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
+
 	for (size_t d = 0; d < rubix_d; d++)
 	{
 		for (size_t h = 0; h < rubix_h; h++)
@@ -167,7 +168,7 @@ void rubix_setup()
 			{
 				r_index = rubix_index(w, h, d);
 				r_model = &(rubixModel[r_index]);
-				g_rubixRbt[r_index] = glm::mat4(1.0f);
+				g_rubixRbt[r_index] = glm::translate(glm::mat4(1.0f), pos_offset + glm::vec3(1.0f * w, 1.0f * h, 1.0f * d));
 
 				// Initialize Rubix Piece Model
 				*r_model = Model();
