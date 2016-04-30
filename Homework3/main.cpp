@@ -40,11 +40,21 @@ float fovy = fov;
 // Model properties
 Model ground, redCube, greenCube;
 glm::mat4 skyRBT;
-glm::mat4 g_objectRbt[2] = { glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), -90.0f, glm::vec3(0.0f, 1.0f, 0.0f)), // RBT for redCube
-							glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f))}; // RBT for greenCube
+glm::mat4 g_objectRbt[2] = {
+	glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), -90.0f, glm::vec3(0.0f, 1.0f, 0.0f)), // RBT for redCube
+	glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f)) }; // RBT for greenCube
 glm::mat4 eyeRBT;
 glm::mat4 worldRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
+
+// Rubic's cube pieces
+Model rubixModel[9];
+glm::mat4 g_rubixRbt[9];
+int rubix_w = 3;	// # of columns
+int rubix_h = 3;	// # of rows
+int rubix_d = 1;	// # of layers
+GLint lightLocRubix[9];
+
 
 // Arcball manipulation
 Model arcBall;
@@ -69,7 +79,7 @@ void update_fovy()
 	}
 	else {
 		const float RAD_PER_DEG = 0.5f * glm::pi<float>() / 180.0f;
-		fovy = (float) atan2(sin(fov * RAD_PER_DEG) * ((float) frameBufferHeight / (float) frameBufferWidth), cos(fov * RAD_PER_DEG)) / RAD_PER_DEG;
+		fovy = (float)atan2(sin(fov * RAD_PER_DEG) * ((float)frameBufferHeight / (float)frameBufferWidth), cos(fov * RAD_PER_DEG)) / RAD_PER_DEG;
 	}
 }
 
@@ -83,20 +93,20 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 	// glViewport accept pixel size, please use glfwGetFramebufferSize rather than window size.
 	// window size != framebuffer size
 	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
-	glViewport(0, 0, (GLsizei) frameBufferWidth, (GLsizei) frameBufferHeight);
+	glViewport(0, 0, (GLsizei)frameBufferWidth, (GLsizei)frameBufferHeight);
 
 	// re-allocate textures with respect to new framebuffer width and height
 	reallocate_picking_texture(frameBufferWidth, frameBufferHeight);
 
 	// Update projection matrix
-	Projection = glm::perspective(fov, ((float) frameBufferWidth / (float) frameBufferHeight), 0.1f, 100.0f);
+	Projection = glm::perspective(fov, ((float)frameBufferWidth / (float)frameBufferHeight), 0.1f, 100.0f);
 }
 
 // TODO: Fill up GLFW mouse button callback function
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	//example code for picking
-	if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
@@ -132,6 +142,80 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	}
 }
 
+// Helper function: Return index of piece
+int rubix_index(int w, int h, int d)
+{
+	return w + rubix_w * (h + rubix_h * d);
+}
+
+
+// Initialize Rubix Model
+// Setting Light Vector
+void rubix_setup()
+{
+	int r_index;
+	Model *r_model;
+	vec3 rubic_color[6] = {
+		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 1.0),
+		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
+
+	for (size_t d = 0; d < rubix_d; d++)
+	{
+		for (size_t h = 0; h < rubix_h; h++)
+		{
+			for (size_t w = 0; w < rubix_w; w++)
+			{
+				r_index = rubix_index(w, h, d);
+				r_model = &(rubixModel[r_index]);
+				g_rubixRbt[r_index] = glm::mat4(1.0f);
+
+				// Initialize Rubix Piece Model
+				*r_model = Model();
+				init_rubic(*r_model, &rubic_color[0]);
+				r_model->initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
+				r_model->initialize_picking("PickingVertexShader.glsl", "PickingFragmentShader.glsl");
+				r_model->set_projection(&Projection);
+				r_model->set_eye(&eyeRBT);
+				r_model->set_model(&g_rubixRbt[r_index]);
+
+				r_model->objectID = r_index + 100;
+
+				// Setting Light Vectors
+				glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
+				lightLocGreen = glGetUniformLocation(r_model->GLSLProgramID, "uLight");
+				glUniform3f(lightLocRubix[r_index], lightVec.x, lightVec.y, lightVec.z);
+			}
+		}
+	}
+}
+
+void rubix_draw_picking()
+{
+	// TODO: Replace literal 9 to variable
+	for (size_t r = 0; r < 9; r++)
+	{
+		rubixModel[r].drawPicking();
+	}
+}
+
+void rubix_draw()
+{
+	// TODO: Replace literal 9 to variable
+	for (size_t r = 0; r < 9; r++)
+	{
+		rubixModel[r].draw();
+	}
+}
+
+void rubix_cleanup()
+{
+	// TODO: Replace literal 9 to variable
+	for (size_t r = 0; r < 9; r++)
+	{
+		rubixModel[r].cleanup();
+	}
+}
+
 int main(void)
 {
 	// Initialise GLFW
@@ -155,7 +239,7 @@ int main(void)
 	glfwMakeContextCurrent(window);
 
 	// Initialize GLEW
-	glewExperimental = (GLboolean) true; // Needed for core profile
+	glewExperimental = (GLboolean)true; // Needed for core profile
 	if (glewInit() != GLEW_OK) {
 		return -1;
 	}
@@ -169,7 +253,7 @@ int main(void)
 
 	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
 	// Update arcBallScreenRadius with framebuffer size
-	arcBallScreenRadius = 0.25f * min((float) frameBufferWidth, (float) frameBufferHeight); // for the initial assignment
+	arcBallScreenRadius = 0.25f * min((float)frameBufferWidth, (float)frameBufferHeight); // for the initial assignment
 
 	// Clear with sky color
 	glClearColor((GLclampf)(128. / 255.), (GLclampf)(200. / 255.), (GLclampf)(255. / 255.), (GLclampf) 0.);
@@ -186,7 +270,7 @@ int main(void)
 	// Initialize framebuffer object and picking textures
 	picking_initialize(frameBufferWidth, frameBufferHeight);
 
-	Projection = glm::perspective(fov, ((float) frameBufferWidth / (float) frameBufferHeight), 0.1f, 100.0f);
+	Projection = glm::perspective(fov, ((float)frameBufferWidth / (float)frameBufferHeight), 0.1f, 100.0f);
 	skyRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.25, 4.0));
 
 	// initial eye frame = sky frame;
@@ -210,20 +294,31 @@ int main(void)
 	redCube.set_eye(&eyeRBT);
 	redCube.set_model(&g_objectRbt[0]);
 
-	redCube.objectID = 1;
+	redCube.objectID = 2;
 
 	greenCube = Model();
-	init_cube(greenCube, glm::vec3(0.0, 1.0, 0.0));
+	vec3 rubic_color[6] =
+	{ glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 1.0),
+		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
+	init_rubic(greenCube, &rubic_color[0]);
 	greenCube.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	greenCube.initialize_picking("PickingVertexShader.glsl", "PickingFragmentShader.glsl");
 	greenCube.set_projection(&Projection);
 	greenCube.set_eye(&eyeRBT);
 	greenCube.set_model(&g_objectRbt[1]);
 
-	greenCube.objectID = 2;
+	greenCube.objectID = 3;
 
-	// TODO: Initialize arcBall
+	// DONE: Initialize arcBall
 	// Initialize your arcBall with DRAW_TYPE::INDEX (it uses GL_ELEMENT_ARRAY_BUFFER to draw sphere)
+	arcBall = Model();
+	init_sphere(arcBall);
+	arcBall.initialize(DRAW_TYPE::INDEX, "VertexShader.glsl", "FragmentShader.glsl");
+	arcBall.set_projection(&Projection);
+	arcBall.set_eye(&eyeRBT);
+	arcBall.set_model(&arcballRBT);
+
+	arcBall.objectID = 1;
 
 	// Setting Light Vectors
 	glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -239,6 +334,8 @@ int main(void)
 	lightLocArc = glGetUniformLocation(arcBall.GLSLProgramID, "uLight");
 	glUniform3f(lightLocArc, lightVec.x, lightVec.y, lightVec.z);
 
+	rubix_setup();
+
 	do {
 		// first pass: picking shader
 		// binding framebuffer
@@ -250,6 +347,7 @@ int main(void)
 		// drawing objects in framebuffer (picking process)
 		redCube.drawPicking();
 		greenCube.drawPicking();
+		rubix_draw_picking();
 
 		// second pass: your drawing
 		// unbinding framebuffer
@@ -259,9 +357,14 @@ int main(void)
 
 		redCube.draw();
 		greenCube.draw();
+		rubix_draw();
+
 		ground.draw();
 
-		// TODO: Draw wireframe of arcball with dynamic radius
+		// DONE: Draw wireframe of arcball with dynamic radius
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		arcBall.draw();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// Swap buffers (Double buffering)
 		glfwSwapBuffers(window);
@@ -275,6 +378,7 @@ int main(void)
 	redCube.cleanup();
 	greenCube.cleanup();
 	arcBall.cleanup();
+	rubix_cleanup();
 
 	// Cleanup textures
 	delete_picking_resources();
