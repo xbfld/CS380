@@ -62,6 +62,7 @@ std::vector<int> pickedIDs;
 // Arcball manipulation
 Model arcBall;
 glm::mat4 arcballRBT = glm::mat4(1.0f);
+glm::mat4 *arcballCenterRBT = &worldRBT;
 float arcBallScreenRadius = 0.25f * min(windowWidth, windowHeight); // for the initial assignment
 float screenToEyeScale = 0.01f;
 float arcBallScale = 0.01f;
@@ -75,6 +76,69 @@ void update_fovy(void);
 
 void selection_checking(void);
 
+// Mouse & Keyboard input related states
+int press_mouse = -1;
+int object_mode = 1;
+bool world_sky_mode = true;
+int viewpoint_mode = 0;
+double last_xpos = 0.0f;
+double last_ypos = 0.0f;
+std::vector<glm::mat4 *> target_objectRBT = { &skyRBT };
+
+void manipulate_targets(glm::mat4);
+
+void update_aFrame()
+{
+	aFrame = transFact(*arcballCenterRBT)*linearFact(eyeRBT);
+}
+
+void update_eye()
+{
+	/*switch (viewpoint_mode)
+	{
+	case 0:
+		eyeRBT = skyRBT;
+		break;
+	case 1:
+		eyeRBT = g_objectRbt[0];
+		break;
+	case 2:
+		eyeRBT = g_objectRbt[1];
+		break;
+	default:
+		break;
+	}*/
+}
+
+void update_arcBallScale()
+{
+	double _z;
+	/*if ((0 == viewpoint_mode) && (0 == object_mode) && (world_sky_mode))
+	{
+		_z = transFact(glm::inverse(eyeRBT) * worldRBT)[3].z;
+	}*/
+	_z = transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3].z;
+	arcBallScale = compute_screen_eye_scale(_z, fovy, frameBufferHeight);
+}
+
+void update_arcBallRBT()
+{
+	arcballRBT = *arcballCenterRBT * glm::scale(vec3(arcBallScale * arcBallScreenRadius));
+}
+
+vec3 get_arcball_center()
+{
+	return vec3(transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3]);
+}
+
+quat get_arcball_quat(double x, double y)
+{
+	vec2 arc_screen_center = eye_to_screen(get_arcball_center(), Projection, frameBufferWidth, frameBufferHeight);
+	vec2 d_pos = vec2(x, y) - arc_screen_center;
+	double _z = pow(arcBallScreenRadius, 2.0f) - glm::dot(d_pos, d_pos);
+	_z = (_z < 0) ? 0 : sqrt(_z);
+	return quat(0, glm::normalize(vec3(d_pos, _z)));
+}
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
 void update_fovy()
@@ -106,12 +170,44 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 
 	// Update projection matrix
 	Projection = glm::perspective(fov, ((float)frameBufferWidth / (float)frameBufferHeight), 0.1f, 100.0f);
+
+	// Update arcball radius
+	arcBallScreenRadius = 0.25f * min((float)frameBufferWidth, (float)frameBufferHeight);
+	update_arcBallScale();
+	update_arcBallRBT();
 }
 
 // TODO: Fill up GLFW mouse button callback function
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	//example code for picking
+	printf("mouse button callback: %d, %d, %d\n", button, action, mods);
+	// button: 0,1,2 -> L,R,M
+	// action: 0,1 -> release, press
+	// mods: comb(1,2,4) -> Shift, Ctrl, Alt
+	if (press_mouse == -1)
+	{
+		if (action == GLFW_PRESS)
+		{
+			press_mouse = button;
+			glfwGetCursorPos(window, &last_xpos, &last_ypos);
+			update_aFrame();
+
+			if (mods == 2)
+			{
+				//screen_drag_mode = true;
+			}
+		}
+	}
+	else
+	{
+		if (action == GLFW_RELEASE && press_mouse == button)
+		{
+			press_mouse = -1;
+			update_arcBallScale();
+			update_arcBallRBT();
+			//screen_drag_mode = false;
+		}
+	}
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		double xpos, ypos;
@@ -135,7 +231,141 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 // TODO: Fill up GLFW cursor position callback function
 static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
+	double d_x = xpos - last_xpos;
+	double d_y = ypos - last_ypos;
+	quat last_quat;
+	quat cur_quat;
+	quat d_quat;
+	mat4 manipulate = mat4(1.0f);
+	if ((object_mode == 0) && (viewpoint_mode != 0))
+	{
+		return;
+	}
+	switch (press_mouse)
+	{
+	case -1:
+		break;
+	case GLFW_MOUSE_BUTTON_1:
+		// Left Mouse Button Pressed
+		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
+		/*if (screen_drag_mode)
+		{
+			int wx, wy;
+			glfwGetWindowPos(window, &wx, &wy);
+			int _x = (int)d_x - cx;
+			int _y = (int)d_y - cy;
+			cx = -_x;
+			cy = -_y;
+			wx -= cx;
+			wy -= cy;
+			glfwSetWindowPos(window, wx, wy);
 
+		}
+		else*/
+		{
+			if ((viewpoint_mode != object_mode)
+				|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
+			{
+				last_quat = get_arcball_quat(last_xpos, frameBufferHeight - 1 - last_ypos);
+				cur_quat = get_arcball_quat(xpos, frameBufferHeight - 1 - ypos);
+				d_quat = cur_quat*inverse(last_quat);
+				manipulate = glm::toMat4(d_quat);
+			}
+			else
+			{
+				double x_rad = d_x / arcBallScreenRadius;
+				double y_rad = d_y / arcBallScreenRadius;
+				manipulate = glm::toMat4(quat(cos(-y_rad), vec3(sin(-y_rad), 0.0f, 0.0f))*quat(cos(x_rad), vec3(0.0f, x_rad, 0.0f)));
+
+				manipulate = inverse(manipulate);
+			}
+			if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+			{
+				manipulate = inverse(manipulate);
+			}
+			manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+		}
+		last_xpos = xpos;
+		last_ypos = ypos;
+		break;
+	case GLFW_MOUSE_BUTTON_2:
+		// Right Mouse Button Pressed
+		printf("cursor pos callbakc: Right, %f, %f\n", xpos, ypos);
+		if ((viewpoint_mode != object_mode)
+			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
+		{
+			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) * arcBallScale);
+		}
+		else
+		{
+			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) / arcBallScreenRadius);
+		}
+		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+		{
+			manipulate = inverse(manipulate);
+		}
+		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+
+		/*if (creative_mode != 0)
+		{
+			int wx, wy;
+			glfwGetWindowPos(window, &wx, &wy);
+			int _x = (int)d_x - cx;
+			int _y = (int)d_y - cy;
+
+			switch (creative_mode)
+			{
+			case 1:
+				cx = -_x;
+				cy = -_y;
+				break;
+			case 3:
+				cx = _x;
+				cy = _y;
+				break;
+			case 5:
+				cx = -_y;
+				cy = _x;
+				break;
+			default:
+				cx = 0;
+				cy = 0;
+				break;
+			}
+			wx -= cx;
+			wy -= cy;
+			glfwSetWindowPos(window, wx, wy);
+		}*/
+		last_xpos = xpos;
+		last_ypos = ypos;
+		break;
+	case GLFW_MOUSE_BUTTON_3:
+		// Middle Mouse Button Pressed
+		printf("cursor pos callbakc: Middle, %f, %f\n", xpos, ypos);
+		if ((viewpoint_mode != object_mode)
+			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
+		{
+			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) * arcBallScale);
+		}
+		else
+		{
+			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) / arcBallScreenRadius);
+		}
+		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
+		{
+			manipulate = inverse(manipulate);
+		}
+		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+		last_xpos = xpos;
+		last_ypos = ypos;
+		break;
+
+	default:
+		break;
+	}
+	update_aFrame();
+	//update_arcBallScale();
+	update_arcBallRBT();
 }
 
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -166,7 +396,7 @@ int rubix_index(int w, int h, int d)
 }
 int rubix_index(ivec3 p)
 {
-	return rubix_index(p.x,p.y,p.z);
+	return rubix_index(p.x, p.y, p.z);
 }
 // Helper function: Decode PickingID to w, h, d
 glm::ivec3 rubix_decode(int id)
@@ -257,7 +487,7 @@ glm::ivec3 rubix_common()
 	{
 		return glm::ivec3(-1);
 	}
-	
+
 	glm::ivec3 result(-2);
 	glm::ivec3 p;
 	for (size_t i = 0; i < pickedIDs.size(); i++)
@@ -295,14 +525,30 @@ void selection_checking()
 		pickedIDs.clear();
 
 		// Setting aFrame
+		target_objectRBT.clear();
 		if (common.x != -1)
 		{
 			if (-1 == common.y)
 			{
+				for (size_t h = 0; h < rubix_h; h++)
+				{
+					common.y = h;
+					target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
+				}
 				common.y = rubix_h / 2;
+				// TODO: Replace hard coded line
+				arcballCenterRBT = target_objectRBT[1];
 			}
-			aFrame = transFact(g_rubixRbt[rubix_index(common)])*linearFact(eyeRBT);
 		}
+	}
+}
+
+// Helper function: Manipulates all targets
+void manipulate_targets(glm::mat4 m)
+{
+	for (size_t i = 0; i < target_objectRBT.size(); i++)
+	{
+		*target_objectRBT[i] = m* *target_objectRBT[i];
 	}
 }
 
