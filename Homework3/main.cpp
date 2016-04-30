@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -54,7 +55,9 @@ int rubix_w = 3;	// # of columns
 int rubix_h = 3;	// # of rows
 int rubix_d = 1;	// # of layers
 GLint lightLocRubix[9];
+int offsetID = 100;
 
+std::vector<int> pickedIDs;
 
 // Arcball manipulation
 Model arcBall;
@@ -69,6 +72,9 @@ static void mouse_button_callback(GLFWwindow*, int, int, int);
 static void cursor_pos_callback(GLFWwindow*, double, double);
 static void keyboard_callback(GLFWwindow*, int, int, int, int);
 void update_fovy(void);
+
+void selection_checking(void);
+
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
 void update_fovy()
@@ -111,7 +117,18 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 		int target = pick((int)xpos, (int)ypos, frameBufferWidth, frameBufferHeight);
-		std::cout << "Picked node: " << target << std::endl;
+		//std::cout << "Picked node: " << target << std::endl;
+		pickedIDs.push_back(target);
+
+		// Print recent picked ID
+		std::cout << "Picked node: ";
+		for (size_t i = 0; i < pickedIDs.size(); i++)
+		{
+			std::cout << pickedIDs[i] << " ";
+		}
+		std::cout << std::endl;
+
+		selection_checking();
 	}
 }
 
@@ -147,6 +164,22 @@ int rubix_index(int w, int h, int d)
 {
 	return w + rubix_w * (h + rubix_h * d);
 }
+int rubix_index(ivec3 p)
+{
+	return rubix_index(p.x,p.y,p.z);
+}
+// Helper function: Decode PickingID to w, h, d
+glm::ivec3 rubix_decode(int id)
+{
+	glm::ivec3 result(-1);
+	id -= offsetID;
+	result.x = id % rubix_w;
+	id /= rubix_w;
+	result.y = id % rubix_h;
+	id /= rubix_h;
+	result.z = id;
+	return result;
+}
 
 // Initialize Rubix Model
 // Setting Light Vector
@@ -179,7 +212,7 @@ void rubix_setup()
 				r_model->set_eye(&eyeRBT);
 				r_model->set_model(&g_rubixRbt[r_index]);
 
-				r_model->objectID = r_index + 100;
+				r_model->objectID = r_index + offsetID;
 
 				// Setting Light Vectors
 				glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -214,6 +247,62 @@ void rubix_cleanup()
 	for (size_t r = 0; r < 9; r++)
 	{
 		rubixModel[r].cleanup();
+	}
+}
+
+// Helper function: Find line or plane contains picked pieces
+glm::ivec3 rubix_common()
+{
+	if (pickedIDs.empty())
+	{
+		return glm::ivec3(-1);
+	}
+	
+	glm::ivec3 result(-2);
+	glm::ivec3 p;
+	for (size_t i = 0; i < pickedIDs.size(); i++)
+	{
+		p = rubix_decode(pickedIDs[i]);
+		// Find common part
+		for (size_t j = 0; j < 3; j++)
+		{
+			if (-2 == result[j])
+			{
+				result[j] = p[j];
+			}
+			else if (p[j] != result[j])
+			{
+				result[j] = -1;
+			}
+		}
+	}
+
+	return result;
+}
+
+// Check selections
+// TODO: Setting aFrame
+void selection_checking()
+{
+	// Check selelction validity
+	if (pickedIDs.size() >= 2)
+	{
+		glm::ivec3 common = rubix_common();
+		std::cout << "common: "
+			<< common.x << " "
+			<< common.y << " "
+			<< common.z << std::endl;
+		pickedIDs.clear();
+
+		// Setting aFrame
+		if (common.x != -1)
+		{
+			if (-1 == common.y)
+			{
+				common.y = rubix_h / 2;
+			}
+			aFrame = transFact(g_rubixRbt[rubix_index(common)])*linearFact(eyeRBT);
+		}
 	}
 }
 
@@ -286,7 +375,7 @@ int main(void)
 	glm::mat4 groundRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, g_groundY, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_groundSize, 1.0f, g_groundSize));
 	ground.set_model(&groundRBT);
 
-	redCube = Model();
+	/*redCube = Model();
 	init_cube(redCube, glm::vec3(1.0, 0.0, 0.0));
 	redCube.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	redCube.initialize_picking("PickingVertexShader.glsl", "PickingFragmentShader.glsl");
@@ -308,7 +397,7 @@ int main(void)
 	greenCube.set_eye(&eyeRBT);
 	greenCube.set_model(&g_objectRbt[1]);
 
-	greenCube.objectID = 3;
+	greenCube.objectID = 3;*/
 
 	// DONE: Initialize arcBall
 	// Initialize your arcBall with DRAW_TYPE::INDEX (it uses GL_ELEMENT_ARRAY_BUFFER to draw sphere)
@@ -326,16 +415,18 @@ int main(void)
 	lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
 	glUniform3f(lightLocGround, lightVec.x, lightVec.y, lightVec.z);
 
-	lightLocRed = glGetUniformLocation(redCube.GLSLProgramID, "uLight");
+	/*lightLocRed = glGetUniformLocation(redCube.GLSLProgramID, "uLight");
 	glUniform3f(lightLocRed, lightVec.x, lightVec.y, lightVec.z);
 
 	lightLocGreen = glGetUniformLocation(greenCube.GLSLProgramID, "uLight");
-	glUniform3f(lightLocGreen, lightVec.x, lightVec.y, lightVec.z);
+	glUniform3f(lightLocGreen, lightVec.x, lightVec.y, lightVec.z);*/
 
 	lightLocArc = glGetUniformLocation(arcBall.GLSLProgramID, "uLight");
 	glUniform3f(lightLocArc, lightVec.x, lightVec.y, lightVec.z);
 
 	rubix_setup();
+
+	pickedIDs = std::vector<int>();
 
 	do {
 		// first pass: picking shader
@@ -346,8 +437,8 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// drawing objects in framebuffer (picking process)
-		redCube.drawPicking();
-		greenCube.drawPicking();
+		/*redCube.drawPicking();
+		greenCube.drawPicking();*/
 		rubix_draw_picking();
 
 		// second pass: your drawing
@@ -356,8 +447,8 @@ int main(void)
 		glClearColor((GLclampf)(128. / 255.), (GLclampf)(200. / 255.), (GLclampf)(255. / 255.), (GLclampf)0.);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		redCube.draw();
-		greenCube.draw();
+		/*redCube.draw();
+		greenCube.draw();*/
 		rubix_draw();
 
 		ground.draw();
@@ -376,10 +467,12 @@ int main(void)
 
 	// Clean up data structures and glsl objects
 	ground.cleanup();
-	redCube.cleanup();
-	greenCube.cleanup();
+	/*redCube.cleanup();
+	greenCube.cleanup();*/
 	arcBall.cleanup();
 	rubix_cleanup();
+
+	pickedIDs.clear();
 
 	// Cleanup textures
 	delete_picking_resources();
