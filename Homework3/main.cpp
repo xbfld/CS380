@@ -399,7 +399,9 @@ void rubix_setup()
 		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
-	rubixCubeRbt = glm::translate(pos_offset);
+	// Alternative value
+	rubixCubeRbt = glm::translate(0.0f,-0.5f,-2.0f) * 
+		glm::eulerAngleYXZ(radians(0.0f),radians(-45.0f),radians(-30.0f));
 
 	for (size_t d = 0; d < rubix_d; d++)
 	{
@@ -409,7 +411,7 @@ void rubix_setup()
 			{
 				r_index = rubix_index(w, h, d);
 				r_model = &(rubixModel[r_index]);
-				g_rubixRbt[r_index] = glm::translate(glm::mat4(1.0f), pos_offset + glm::vec3(1.0f * w, 1.0f * h, 1.0f * d));
+				g_rubixRbt[r_index] = rubixCubeRbt * glm::translate(glm::mat4(1.0f), pos_offset + glm::vec3(1.0f * w, 1.0f * h, 1.0f * d));
 
 				// Initialize Rubix Piece Model
 				*r_model = Model();
@@ -514,7 +516,7 @@ void selection_checking()
 			}
 			common.y = rubix_h / 2;
 			arcballCenterRBT = target_objectRBT[1];
-			rotation_axis = vec3(inverse(rubixCubeRbt) * vec4(0.0f, 1.0f, 0.0f, 0.0f));
+			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
 		// same row
 		else if ((-1 == common.x) && (-1 != common.y))
@@ -526,7 +528,7 @@ void selection_checking()
 			}
 			common.x = rubix_w / 2;
 			arcballCenterRBT = target_objectRBT[1];
-			rotation_axis = vec3(inverse(rubixCubeRbt) * vec4(1.0f, 0.0f, 0.0f, 0.0f));
+			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
 		}
 		update_arcBallScale();
 		update_arcBallRBT();
