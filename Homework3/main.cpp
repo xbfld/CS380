@@ -85,6 +85,7 @@ bool world_sky_mode = true;
 int viewpoint_mode = 0;
 double last_xpos = 0.0f;
 double last_ypos = 0.0f;
+quat base_quat;
 std::vector<glm::mat4 *> target_objectRBT = { &skyRBT };
 
 void manipulate_targets(glm::mat4);
@@ -157,6 +158,39 @@ quat get_arcball_quat(vec3 pos, vec3 rot_axis)
 	return quat(0, glm::normalize(cross(pos, rot_axis)));
 }
 
+quat screen_to_arcball_quat(double xpos, double ypos)
+{
+	vec3 arcball_pos;
+	arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
+	return get_arcball_quat(arcball_pos, rotation_axis);
+}
+
+// Rotate arcball based on input quaternian
+void arcball_rotate(quat q)
+{
+	quat last_quat;
+	quat cur_quat;
+	quat d_quat;
+	mat4 manipulate = mat4(1.0f);
+	
+	last_quat = screen_to_arcball_quat(last_xpos, last_ypos);
+	cur_quat = q;
+
+	d_quat = cur_quat*inverse(last_quat);
+	manipulate = glm::toMat4(d_quat);
+	manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+}
+// Rotate arcball based on screen pos
+// Update last cursor pos
+void arcball_rotate(double xpos, double ypos)
+{
+	double d_x = xpos - last_xpos;
+	double d_y = ypos - last_ypos;
+	arcball_rotate(screen_to_arcball_quat(xpos, ypos));
+	last_xpos = xpos;
+	last_ypos = ypos;
+}
+
 // Helper function: Update the vertical field-of-view(float fovy in global)
 void update_fovy()
 {
@@ -207,6 +241,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		{
 			press_mouse = button;
 			glfwGetCursorPos(window, &last_xpos, &last_ypos);
+			base_quat = screen_to_arcball_quat(last_xpos, last_ypos);
 			update_aFrame();
 
 			if (mods == 2)
@@ -220,6 +255,12 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		if (action == GLFW_RELEASE && press_mouse == button)
 		{
 			press_mouse = -1;
+			
+			if (GLFW_MOUSE_BUTTON_1 == button)
+			{
+				// Magnet. Find the Right Place
+				arcball_rotate(base_quat);
+			}
 			update_arcBallScale();
 			update_arcBallRBT();
 			//screen_drag_mode = false;
@@ -248,14 +289,14 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 // TODO: Fill up GLFW cursor position callback function
 static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	double d_x = xpos - last_xpos;
+	/*double d_x = xpos - last_xpos;
 	double d_y = ypos - last_ypos;
 	vec3 last_arcball_pos;
 	vec3 cur_arcball_pos;
 	quat last_quat;
 	quat cur_quat;
 	quat d_quat;
-	mat4 manipulate = mat4(1.0f);
+	mat4 manipulate = mat4(1.0f);*/
 	switch (press_mouse)
 	{
 	case -1:
@@ -263,33 +304,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	case GLFW_MOUSE_BUTTON_1:
 		// Left Mouse Button Pressed
 		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
-		{
-			if ((viewpoint_mode != object_mode)
-				|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
-			{
-				last_arcball_pos = get_arcball_pos(last_xpos, frameBufferHeight - 1 - last_ypos);
-				cur_arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
-				last_quat = get_arcball_quat(last_arcball_pos, rotation_axis);
-				cur_quat = get_arcball_quat(cur_arcball_pos, rotation_axis);
-				d_quat = cur_quat*inverse(last_quat);
-				manipulate = glm::toMat4(d_quat);
-			}
-			else
-			{
-				double x_rad = d_x / arcBallScreenRadius;
-				double y_rad = d_y / arcBallScreenRadius;
-				manipulate = glm::toMat4(quat(cos(-y_rad), vec3(sin(-y_rad), 0.0f, 0.0f))*quat(cos(x_rad), vec3(0.0f, x_rad, 0.0f)));
-
-				manipulate = inverse(manipulate);
-			}
-			if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
-			{
-				manipulate = inverse(manipulate);
-			}
-			manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
-			last_xpos = xpos;
-			last_ypos = ypos;
-		}
+		arcball_rotate(xpos, ypos);
 		break;
 	case GLFW_MOUSE_BUTTON_2:
 		// Right Mouse Button Pressed
@@ -335,7 +350,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		last_xpos = xpos;
 		last_ypos = ypos;
 	}*/
-	break;
+		break;
 
 	default:
 		break;
