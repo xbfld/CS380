@@ -51,6 +51,7 @@ glm::mat4 aFrame;
 // Rubic's cube pieces
 Model rubixModel[9];
 glm::mat4 g_rubixRbt[9];
+glm::mat4 rubixCubeRbt = glm::mat4(1.0f);
 int rubix_w = 3;	// # of columns
 int rubix_h = 3;	// # of rows
 int rubix_d = 1;	// # of layers
@@ -146,7 +147,11 @@ quat get_arcball_quat(double x, double y)
 {
 	return quat(0, get_arcball_pos(x, y));
 }
-// 
+quat get_arcball_quat(vec3 pos)
+{
+	return quat(0, pos);
+}
+// Setting rotate axis
 quat get_arcball_quat(vec3 pos, vec3 rot_axis)
 {
 	return quat(0, glm::normalize(cross(pos, rot_axis)));
@@ -282,7 +287,6 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 			{
 				last_arcball_pos = get_arcball_pos(last_xpos, frameBufferHeight - 1 - last_ypos);
 				cur_arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
-				// TODO: correcting axis
 				last_quat = get_arcball_quat(last_arcball_pos, rotation_axis);
 				cur_quat = get_arcball_quat(cur_arcball_pos, rotation_axis);
 				d_quat = cur_quat*inverse(last_quat);
@@ -439,6 +443,7 @@ void rubix_setup()
 		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
+	rubixCubeRbt = glm::translate(pos_offset);
 
 	for (size_t d = 0; d < rubix_d; d++)
 	{
@@ -543,21 +548,32 @@ void selection_checking()
 
 		// Setting aFrame
 		target_objectRBT.clear();
-		if (common.x != -1)
+		// same column
+		if ((-1 != common.x) && (-1 == common.y))
 		{
-			if (-1 == common.y)
+			for (size_t h = 0; h < rubix_h; h++)
 			{
-				for (size_t h = 0; h < rubix_h; h++)
-				{
-					common.y = h;
-					target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
-				}
-				common.y = rubix_h / 2;
-				// TODO: Replace hard coded line
-				arcballCenterRBT = target_objectRBT[1];
-				rotation_axis = vec3(*arcballCenterRBT * vec4(0.0f, 1.0f, 0.0f, 0.0f));
+				common.y = h;
+				target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
 			}
+			common.y = rubix_h / 2;
+			arcballCenterRBT = target_objectRBT[1];
+			rotation_axis = vec3(inverse(rubixCubeRbt) * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
+		// same row
+		else if ((-1 == common.x) && (-1 != common.y))
+		{
+			for (size_t w = 0; w < rubix_w; w++)
+			{
+				common.x = w;
+				target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
+			}
+			common.x = rubix_w / 2;
+			arcballCenterRBT = target_objectRBT[1];
+			rotation_axis = vec3(inverse(rubixCubeRbt) * vec4(1.0f, 0.0f, 0.0f, 0.0f));
+		}
+		update_arcBallScale();
+		update_arcBallRBT();
 	}
 }
 
