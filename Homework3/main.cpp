@@ -85,7 +85,10 @@ bool world_sky_mode = true;
 int viewpoint_mode = 0;
 double last_xpos = 0.0f;
 double last_ypos = 0.0f;
+quat last_quat;
 quat base_quat;
+std::vector<quat> bases;
+int magnet_state = -1;
 std::vector<glm::mat4 *> target_objectRBT = { &skyRBT };
 
 void manipulate_targets(glm::mat4);
@@ -158,6 +161,39 @@ quat get_arcball_quat(vec3 pos, vec3 rot_axis)
 	return quat(0, glm::normalize(cross(pos, rot_axis)));
 }
 
+bool is_close_to_stick(quat q, quat base, float sens)
+{
+	float _angle = angle(q, base);
+	return (_angle < sens);
+}
+
+quat magnet(quat q, quat base, float sens)
+{
+	float min_angle = sens;
+	float _angle;
+	magnet_state = -1;
+	for (size_t i = 0; i < bases.size(); i++)
+	{
+		_angle = angle(q, bases[i]);
+		//std::cout << "_angle: " << _angle << std::endl;
+		if (_angle < min_angle)
+		{
+			magnet_state = i;
+			min_angle = _angle;
+		}
+	}
+	if (-1 != magnet_state)
+	{
+		q = bases[magnet_state];
+	}
+	//std::cout << "magnet_state: " << magnet_state << std::endl;
+	return q;
+}
+quat magnet(quat q, quat base)
+{
+	return magnet(q, base, 180.0f);
+}
+
 quat screen_to_arcball_quat(double xpos, double ypos)
 {
 	vec3 arcball_pos;
@@ -166,19 +202,18 @@ quat screen_to_arcball_quat(double xpos, double ypos)
 }
 
 // Rotate arcball based on input quaternian
-void arcball_rotate(quat q)
+void arcball_rotate(quat cur_quat)
 {
-	quat last_quat;
-	quat cur_quat;
 	quat d_quat;
 	mat4 manipulate = mat4(1.0f);
-	
-	last_quat = screen_to_arcball_quat(last_xpos, last_ypos);
-	cur_quat = q;
+
+	// TODO: Replace literal 10.0f to variable
+	cur_quat = magnet(cur_quat, base_quat, 10.0f);
 
 	d_quat = cur_quat*inverse(last_quat);
 	manipulate = glm::toMat4(d_quat);
 	manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+	last_quat = cur_quat;
 }
 // Rotate arcball based on screen pos
 // Update last cursor pos
@@ -242,6 +277,14 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			press_mouse = button;
 			glfwGetCursorPos(window, &last_xpos, &last_ypos);
 			base_quat = screen_to_arcball_quat(last_xpos, last_ypos);
+			last_quat = base_quat;
+
+			// Hard coded magnet points
+			quat co_base = base_quat*quat(0.0f, rotation_axis);
+			bases.push_back(base_quat);
+			bases.push_back(co_base);
+			bases.push_back(-co_base);
+
 			update_aFrame();
 
 			if (mods == 2)
@@ -255,11 +298,13 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		if (action == GLFW_RELEASE && press_mouse == button)
 		{
 			press_mouse = -1;
-			
+
 			if (GLFW_MOUSE_BUTTON_1 == button)
 			{
 				// Magnet. Find the Right Place
-				arcball_rotate(base_quat);
+				arcball_rotate(magnet(last_quat, base_quat));
+				bases.clear();
+				bases.shrink_to_fit();
 			}
 			update_arcBallScale();
 			update_arcBallRBT();
