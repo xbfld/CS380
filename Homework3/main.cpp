@@ -267,20 +267,6 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	case GLFW_MOUSE_BUTTON_1:
 		// Left Mouse Button Pressed
 		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
-		/*if (screen_drag_mode)
-		{
-			int wx, wy;
-			glfwGetWindowPos(window, &wx, &wy);
-			int _x = (int)d_x - cx;
-			int _y = (int)d_y - cy;
-			cx = -_x;
-			cy = -_y;
-			wx -= cx;
-			wy -= cy;
-			glfwSetWindowPos(window, wx, wy);
-
-		}
-		else*/
 		{
 			if ((viewpoint_mode != object_mode)
 				|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
@@ -327,36 +313,6 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		}
 		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
 
-		/*if (creative_mode != 0)
-		{
-			int wx, wy;
-			glfwGetWindowPos(window, &wx, &wy);
-			int _x = (int)d_x - cx;
-			int _y = (int)d_y - cy;
-
-			switch (creative_mode)
-			{
-			case 1:
-				cx = -_x;
-				cy = -_y;
-				break;
-			case 3:
-				cx = _x;
-				cy = _y;
-				break;
-			case 5:
-				cx = -_y;
-				cy = _x;
-				break;
-			default:
-				cx = 0;
-				cy = 0;
-				break;
-			}
-			wx -= cx;
-			wy -= cy;
-			glfwSetWindowPos(window, wx, wy);
-		}*/
 		last_xpos = xpos;
 		last_ypos = ypos;
 		break;
@@ -655,30 +611,6 @@ int main(void)
 	glm::mat4 groundRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, g_groundY, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_groundSize, 1.0f, g_groundSize));
 	ground.set_model(&groundRBT);
 
-	/*redCube = Model();
-	init_cube(redCube, glm::vec3(1.0, 0.0, 0.0));
-	redCube.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
-	redCube.initialize_picking("PickingVertexShader.glsl", "PickingFragmentShader.glsl");
-
-	redCube.set_projection(&Projection);
-	redCube.set_eye(&eyeRBT);
-	redCube.set_model(&g_objectRbt[0]);
-
-	redCube.objectID = 2;
-
-	greenCube = Model();
-	vec3 rubic_color[6] =
-	{ glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 1.0),
-		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
-	init_rubic(greenCube, &rubic_color[0]);
-	greenCube.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
-	greenCube.initialize_picking("PickingVertexShader.glsl", "PickingFragmentShader.glsl");
-	greenCube.set_projection(&Projection);
-	greenCube.set_eye(&eyeRBT);
-	greenCube.set_model(&g_objectRbt[1]);
-
-	greenCube.objectID = 3;*/
-
 	// DONE: Initialize arcBall
 	// Initialize your arcBall with DRAW_TYPE::INDEX (it uses GL_ELEMENT_ARRAY_BUFFER to draw sphere)
 	arcBall = Model();
@@ -694,12 +626,6 @@ int main(void)
 	glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
 	lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
 	glUniform3f(lightLocGround, lightVec.x, lightVec.y, lightVec.z);
-
-	/*lightLocRed = glGetUniformLocation(redCube.GLSLProgramID, "uLight");
-	glUniform3f(lightLocRed, lightVec.x, lightVec.y, lightVec.z);
-
-	lightLocGreen = glGetUniformLocation(greenCube.GLSLProgramID, "uLight");
-	glUniform3f(lightLocGreen, lightVec.x, lightVec.y, lightVec.z);*/
 
 	lightLocArc = glGetUniformLocation(arcBall.GLSLProgramID, "uLight");
 	glUniform3f(lightLocArc, lightVec.x, lightVec.y, lightVec.z);
@@ -717,8 +643,6 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// drawing objects in framebuffer (picking process)
-		/*redCube.drawPicking();
-		greenCube.drawPicking();*/
 		rubix_draw_picking();
 
 		// second pass: your drawing
@@ -727,8 +651,6 @@ int main(void)
 		glClearColor((GLclampf)(128. / 255.), (GLclampf)(200. / 255.), (GLclampf)(255. / 255.), (GLclampf)0.);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		/*redCube.draw();
-		greenCube.draw();*/
 		rubix_draw();
 
 		ground.draw();
@@ -747,8 +669,6 @@ int main(void)
 
 	// Clean up data structures and glsl objects
 	ground.cleanup();
-	/*redCube.cleanup();
-	greenCube.cleanup();*/
 	arcBall.cleanup();
 	rubix_cleanup();
 
