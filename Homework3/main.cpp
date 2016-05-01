@@ -52,6 +52,8 @@ glm::mat4 aFrame;
 Model rubixModel[9];
 glm::mat4 g_rubixRbt[9];
 glm::mat4 rubixCubeRbt = glm::mat4(1.0f);
+int rubix_pos2id[9]{ 0 };	// Integer position to object ID
+int rubix_id2pos[9]{ 0 };	// Object ID to integer position
 int rubix_w = 3;	// # of columns
 int rubix_h = 3;	// # of rows
 int rubix_d = 1;	// # of layers
@@ -77,6 +79,7 @@ static void keyboard_callback(GLFWwindow*, int, int, int, int);
 void update_fovy(void);
 
 void selection_checking(void);
+int rubix_encode(int, int, int);
 
 // Mouse & Keyboard input related states
 int press_mouse = -1; // -1 if not pressed else relate button ID
@@ -89,7 +92,8 @@ quat last_quat;
 quat base_quat;
 std::vector<quat> bases = std::vector<quat>();
 int magnet_state = -1;
-std::vector<glm::mat4 *> target_objectRBT = { &skyRBT };
+std::vector<glm::mat4 *> target_objectRBT = std::vector<glm::mat4 *>();
+std::vector<int> target_objectID = std::vector<int>();
 
 void manipulate_targets(glm::mat4);
 
@@ -226,6 +230,40 @@ void arcball_rotate(double xpos, double ypos)
 	last_ypos = ypos;
 }
 
+void update_rubix_pos_id()
+{
+	int id;
+	int pos;
+	int nid; // new id
+	std::vector<int> poses = std::vector<int>();
+	switch (magnet_state)
+	{
+	case 0:
+	case 1:
+		break;
+	case 2:
+	case 3:
+		for (size_t i = 0; i < target_objectID.size(); i++)
+		{
+			id = target_objectID[i];
+			nid = target_objectID[target_objectID.size() - i - 1];
+			pos = rubix_id2pos[id];
+			rubix_pos2id[pos] = nid;
+			poses.push_back(pos);
+		}
+		for (size_t i = 0; i < target_objectID.size(); i++)
+		{
+			pos = poses[i];
+			rubix_id2pos[rubix_pos2id[pos]] = pos;
+		}
+		poses.clear();
+		poses.shrink_to_fit();
+		break;
+	default:
+		break;
+	}
+}
+
 // Helper function: Update the vertical field-of-view(float fovy in global)
 void update_fovy()
 {
@@ -304,6 +342,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			{
 				// Magnet. Find the Right Place
 				arcball_rotate(magnet(last_quat, base_quat));
+				update_rubix_pos_id();
 			}
 			bases.clear();
 			bases.shrink_to_fit();
@@ -428,20 +467,19 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	}
 }
 
-// Helper function: Return index of Rubix piece
-int rubix_index(int w, int h, int d)
+// Helper function: Encode integer position from w, h, d position
+int rubix_encode(int w, int h, int d)
 {
 	return w + rubix_w * (h + rubix_h * d);
 }
-int rubix_index(ivec3 p)
+int rubix_encode(ivec3 p)
 {
-	return rubix_index(p.x, p.y, p.z);
+	return rubix_encode(p.x, p.y, p.z);
 }
-// Helper function: Decode PickingID to w, h, d
+// Helper function: Decode integer position to w, h, d position
 glm::ivec3 rubix_decode(int id)
 {
 	glm::ivec3 result(-1);
-	id -= offsetID;
 	result.x = id % rubix_w;
 	id /= rubix_w;
 	result.y = id % rubix_h;
@@ -471,10 +509,11 @@ void rubix_setup()
 		{
 			for (size_t w = 0; w < rubix_w; w++)
 			{
-				r_index = rubix_index(w, h, d);
+				r_index = rubix_encode(w, h, d);
 				r_model = &(rubixModel[r_index]);
 				g_rubixRbt[r_index] = rubixCubeRbt * glm::translate(glm::mat4(1.0f), pos_offset + glm::vec3(1.0f * w, 1.0f * h, 1.0f * d));
-
+				rubix_pos2id[r_index] = r_index;
+				rubix_id2pos[r_index] = r_index;
 				// Initialize Rubix Piece Model
 				*r_model = Model();
 				init_rubic(*r_model, &rubic_color[0]);
@@ -534,7 +573,8 @@ glm::ivec3 rubix_common()
 	glm::ivec3 p;
 	for (size_t i = 0; i < pickedIDs.size(); i++)
 	{
-		p = rubix_decode(pickedIDs[i]);
+		// p contains w, h, d position
+		p = rubix_decode(rubix_id2pos[pickedIDs[i] - offsetID]);
 		// Find common part
 		for (size_t j = 0; j < 3; j++)
 		{
@@ -560,6 +600,7 @@ void selection_checking()
 	if (pickedIDs.size() >= 2)
 	{
 		glm::ivec3 common = rubix_common();
+		int id;
 		std::cout << "common: "
 			<< common.x << " "
 			<< common.y << " "
@@ -567,6 +608,7 @@ void selection_checking()
 		pickedIDs.clear();
 
 		// Setting aFrame
+		target_objectID.clear();
 		target_objectRBT.clear();
 		// same column
 		if ((-1 != common.x) && (-1 == common.y))
@@ -574,7 +616,9 @@ void selection_checking()
 			for (size_t h = 0; h < rubix_h; h++)
 			{
 				common.y = h;
-				target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
+				id = rubix_pos2id[rubix_encode(common)];
+				target_objectID.push_back(id);
+				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.y = rubix_h / 2;
 			arcballCenterRBT = target_objectRBT[1];
@@ -586,7 +630,9 @@ void selection_checking()
 			for (size_t w = 0; w < rubix_w; w++)
 			{
 				common.x = w;
-				target_objectRBT.push_back(&g_rubixRbt[rubix_index(common)]);
+				id = rubix_pos2id[rubix_encode(common)];
+				target_objectID.push_back(id);
+				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.x = rubix_w / 2;
 			arcballCenterRBT = target_objectRBT[1];
