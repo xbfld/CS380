@@ -131,13 +131,22 @@ vec3 get_arcball_center()
 	return vec3(transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3]);
 }
 
-quat get_arcball_quat(double x, double y)
+vec3 get_arcball_pos(double x, double y)
 {
 	vec2 arc_screen_center = eye_to_screen(get_arcball_center(), Projection, frameBufferWidth, frameBufferHeight);
 	vec2 d_pos = vec2(x, y) - arc_screen_center;
 	double _z = pow(arcBallScreenRadius, 2.0f) - glm::dot(d_pos, d_pos);
 	_z = (_z < 0) ? 0 : sqrt(_z);
-	return quat(0, glm::normalize(vec3(d_pos, _z)));
+	return glm::normalize(vec3(d_pos, _z));
+}
+
+quat get_arcball_quat(double x, double y)
+{
+	return quat(0, get_arcball_pos(x, y));
+}
+quat get_arcball_quat(vec3 pos)
+{
+	return quat(0, pos);
 }
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
@@ -233,6 +242,8 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	double d_x = xpos - last_xpos;
 	double d_y = ypos - last_ypos;
+	vec3 last_arcball_pos;
+	vec3 cur_arcball_pos;
 	quat last_quat;
 	quat cur_quat;
 	quat d_quat;
@@ -266,8 +277,10 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 			if ((viewpoint_mode != object_mode)
 				|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
 			{
-				last_quat = get_arcball_quat(last_xpos, frameBufferHeight - 1 - last_ypos);
-				cur_quat = get_arcball_quat(xpos, frameBufferHeight - 1 - ypos);
+				last_arcball_pos = get_arcball_pos(last_xpos, frameBufferHeight - 1 - last_ypos);
+				cur_arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
+				last_quat = get_arcball_quat(last_arcball_pos);
+				cur_quat = get_arcball_quat(cur_arcball_pos);
 				d_quat = cur_quat*inverse(last_quat);
 				manipulate = glm::toMat4(d_quat);
 			}
