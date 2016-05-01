@@ -87,7 +87,7 @@ double last_xpos = 0.0f;
 double last_ypos = 0.0f;
 quat last_quat;
 quat base_quat;
-std::vector<quat> bases;
+std::vector<quat> bases = std::vector<quat>();
 int magnet_state = -1;
 std::vector<glm::mat4 *> target_objectRBT = { &skyRBT };
 
@@ -282,6 +282,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			// Hard coded magnet points
 			quat co_base = base_quat*quat(0.0f, rotation_axis);
 			bases.push_back(base_quat);
+			bases.push_back(-base_quat);
 			bases.push_back(co_base);
 			bases.push_back(-co_base);
 
@@ -303,9 +304,9 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			{
 				// Magnet. Find the Right Place
 				arcball_rotate(magnet(last_quat, base_quat));
-				bases.clear();
-				bases.shrink_to_fit();
 			}
+			bases.clear();
+			bases.shrink_to_fit();
 			update_arcBallScale();
 			update_arcBallRBT();
 			//screen_drag_mode = false;
@@ -349,6 +350,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	case GLFW_MOUSE_BUTTON_1:
 		// Left Mouse Button Pressed
 		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
+		printf("bases size: %d\n", bases.size());
 		arcball_rotate(xpos, ypos);
 		break;
 	case GLFW_MOUSE_BUTTON_2:
@@ -576,7 +578,7 @@ void selection_checking()
 			}
 			common.y = rubix_h / 2;
 			arcballCenterRBT = target_objectRBT[1];
-			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
+			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
 		}
 		// same row
 		else if ((-1 == common.x) && (-1 != common.y))
@@ -588,7 +590,7 @@ void selection_checking()
 			}
 			common.x = rubix_w / 2;
 			arcballCenterRBT = target_objectRBT[1];
-			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
+			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
 		update_arcBallScale();
 		update_arcBallRBT();
