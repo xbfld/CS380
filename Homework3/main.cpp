@@ -66,6 +66,7 @@ glm::mat4 *arcballCenterRBT = &worldRBT;
 float arcBallScreenRadius = 0.25f * min(windowWidth, windowHeight); // for the initial assignment
 float screenToEyeScale = 0.01f;
 float arcBallScale = 0.01f;
+vec3 rotation_axis{ 1.0f,0.0f,0.0f };
 
 // Function definition
 static void window_size_callback(GLFWwindow*, int, int);
@@ -140,13 +141,15 @@ vec3 get_arcball_pos(double x, double y)
 	return glm::normalize(vec3(d_pos, _z));
 }
 
+// Remained old version
 quat get_arcball_quat(double x, double y)
 {
 	return quat(0, get_arcball_pos(x, y));
 }
-quat get_arcball_quat(vec3 pos)
+// 
+quat get_arcball_quat(vec3 pos, vec3 rot_axis)
 {
-	return quat(0, pos);
+	return quat(0, glm::normalize(cross(pos, rot_axis)));
 }
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
@@ -279,8 +282,9 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 			{
 				last_arcball_pos = get_arcball_pos(last_xpos, frameBufferHeight - 1 - last_ypos);
 				cur_arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
-				last_quat = get_arcball_quat(last_arcball_pos);
-				cur_quat = get_arcball_quat(cur_arcball_pos);
+				// TODO: correcting axis
+				last_quat = get_arcball_quat(last_arcball_pos, rotation_axis);
+				cur_quat = get_arcball_quat(cur_arcball_pos, rotation_axis);
 				d_quat = cur_quat*inverse(last_quat);
 				manipulate = glm::toMat4(d_quat);
 			}
@@ -551,6 +555,7 @@ void selection_checking()
 				common.y = rubix_h / 2;
 				// TODO: Replace hard coded line
 				arcballCenterRBT = target_objectRBT[1];
+				rotation_axis = vec3(*arcballCenterRBT * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 			}
 		}
 	}
