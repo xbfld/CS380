@@ -79,7 +79,7 @@ void update_fovy(void);
 void selection_checking(void);
 
 // Mouse & Keyboard input related states
-int press_mouse = -1;
+int press_mouse = -1; // -1 if not pressed else relate button ID
 int object_mode = 1;
 bool world_sky_mode = true;
 int viewpoint_mode = 0;
@@ -256,10 +256,6 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 	quat cur_quat;
 	quat d_quat;
 	mat4 manipulate = mat4(1.0f);
-	if ((object_mode == 0) && (viewpoint_mode != 0))
-	{
-		return;
-	}
 	switch (press_mouse)
 	{
 	case -1:
@@ -291,12 +287,13 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 				manipulate = inverse(manipulate);
 			}
 			manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+			last_xpos = xpos;
+			last_ypos = ypos;
 		}
-		last_xpos = xpos;
-		last_ypos = ypos;
 		break;
 	case GLFW_MOUSE_BUTTON_2:
 		// Right Mouse Button Pressed
+	/*{
 		printf("cursor pos callbakc: Right, %f, %f\n", xpos, ypos);
 		if ((viewpoint_mode != object_mode)
 			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
@@ -315,9 +312,11 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 		last_xpos = xpos;
 		last_ypos = ypos;
+	}*/
 		break;
 	case GLFW_MOUSE_BUTTON_3:
 		// Middle Mouse Button Pressed
+	/*{
 		printf("cursor pos callbakc: Middle, %f, %f\n", xpos, ypos);
 		if ((viewpoint_mode != object_mode)
 			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
@@ -335,7 +334,8 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
 		last_xpos = xpos;
 		last_ypos = ypos;
-		break;
+	}*/
+	break;
 
 	default:
 		break;
@@ -400,8 +400,8 @@ void rubix_setup()
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
 	// Alternative value
-	rubixCubeRbt = glm::translate(0.0f,-0.5f,-2.0f) * 
-		glm::eulerAngleYXZ(radians(0.0f),radians(-45.0f),radians(-30.0f));
+	rubixCubeRbt = glm::translate(0.0f, -0.5f, -2.0f) *
+		glm::eulerAngleYXZ(radians(0.0f), radians(-45.0f), radians(-30.0f));
 
 	for (size_t d = 0; d < rubix_d; d++)
 	{
