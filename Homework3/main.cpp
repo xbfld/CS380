@@ -732,6 +732,9 @@ int main(void)
 
 	arcBall.objectID = 1;
 
+	update_arcBallScale();
+	update_arcBallRBT();
+
 	// Setting Light Vectors
 	glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
 	lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
