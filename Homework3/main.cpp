@@ -65,7 +65,7 @@ std::vector<int> pickedIDs;
 // Arcball manipulation
 Model arcBall;
 glm::mat4 arcballRBT = glm::mat4(1.0f);
-glm::mat4 *arcballCenterRBT = &worldRBT;
+glm::mat4 arcballCenterRBT = worldRBT;
 float arcBallScreenRadius = 0.25f * min(windowWidth, windowHeight); // for the initial assignment
 float screenToEyeScale = 0.01f;
 float arcBallScale = 0.01f;
@@ -99,7 +99,7 @@ void manipulate_targets(glm::mat4);
 
 void update_aFrame()
 {
-	aFrame = transFact(*arcballCenterRBT)*linearFact(eyeRBT);
+	aFrame = transFact(arcballCenterRBT)*linearFact(eyeRBT);
 }
 
 void update_eye()
@@ -127,18 +127,18 @@ void update_arcBallScale()
 	{
 		_z = transFact(glm::inverse(eyeRBT) * worldRBT)[3].z;
 	}*/
-	_z = transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3].z;
+	_z = transFact(glm::inverse(eyeRBT)* arcballCenterRBT)[3].z;
 	arcBallScale = compute_screen_eye_scale(_z, fovy, frameBufferHeight);
 }
 
 void update_arcBallRBT()
 {
-	arcballRBT = *arcballCenterRBT * glm::scale(vec3(arcBallScale * arcBallScreenRadius));
+	arcballRBT = arcballCenterRBT * glm::scale(vec3(arcBallScale * arcBallScreenRadius));
 }
 
 vec3 get_arcball_center()
 {
-	return vec3(transFact(glm::inverse(eyeRBT)* *arcballCenterRBT)[3]);
+	return vec3(transFact(glm::inverse(eyeRBT)* arcballCenterRBT)[3]);
 }
 
 vec3 get_arcball_pos(double x, double y)
@@ -173,24 +173,49 @@ bool is_close_to_stick(quat q, quat base, float sens)
 
 quat magnet(quat q, quat base, float sens)
 {
-	float min_angle = sens;
-	float _angle;
+	//std::cout << "----Magnet Old---- " << std::endl;
+	//float min_angle = sens;
+	//float _angle;
+	//magnet_state = -1;
+	//std::cout << "sens: " << sens << std::endl;
+	//for (size_t i = 0; i < bases.size(); i++)
+	//{
+	//	_angle = angle(q, bases[i]);
+	//	std::cout << "_angle: " << _angle << std::endl;
+	//	if (_angle < min_angle)
+	//	{
+	//		magnet_state = i;
+	//		min_angle = _angle;
+	//	}
+	//}
+	//std::cout << "magnet_state: " << magnet_state << std::endl;
+	///*if (-1 != magnet_state)
+	//{
+	//	q = bases[magnet_state];
+	//}
+	//return q;*/
+	
+	//std::cout << "----Magnet New---- " << std::endl;
+	float max_cos = cos(radians(sens));
+	float _cos;
 	magnet_state = -1;
+	//std::cout << "max_cos: " << max_cos << std::endl;
 	for (size_t i = 0; i < bases.size(); i++)
 	{
-		_angle = angle(q, bases[i]);
-		//std::cout << "_angle: " << _angle << std::endl;
-		if (_angle < min_angle)
+		_cos = dot(q, bases[i]);
+		//std::cout << "_cos: " << _cos << std::endl;
+		if (_cos > max_cos)
 		{
 			magnet_state = i;
-			min_angle = _angle;
+			max_cos = _cos;
 		}
 	}
+	std::cout << "magnet_state: " << magnet_state << std::endl;
+	
 	if (-1 != magnet_state)
 	{
 		q = bases[magnet_state];
 	}
-	//std::cout << "magnet_state: " << magnet_state << std::endl;
 	return q;
 }
 quat magnet(quat q, quat base)
@@ -314,22 +339,40 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		{
 			press_mouse = button;
 			glfwGetCursorPos(window, &last_xpos, &last_ypos);
-			base_quat = screen_to_arcball_quat(last_xpos, last_ypos);
-			last_quat = base_quat;
+			if (button == GLFW_MOUSE_BUTTON_LEFT)
+			{
+				base_quat = screen_to_arcball_quat(last_xpos, last_ypos);
+				last_quat = base_quat;
 
-			// Hard coded magnet points
-			quat co_base = base_quat*quat(0.0f, rotation_axis);
-			bases.push_back(base_quat);
-			bases.push_back(-base_quat);
-			bases.push_back(co_base);
-			bases.push_back(-co_base);
+				// Hard coded magnet points
+				quat co_base = base_quat*quat(0.0f, rotation_axis);
+				bases.push_back(base_quat);
+				bases.push_back(-base_quat);
+				bases.push_back(co_base);
+				bases.push_back(-co_base);
+
+			}
+
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+			{
+				double xpos, ypos;
+				glfwGetCursorPos(window, &xpos, &ypos);
+				int target = pick((int)xpos, (int)ypos, frameBufferWidth, frameBufferHeight);
+				//std::cout << "Picked node: " << target << std::endl;
+				pickedIDs.push_back(target);
+
+				// Print recent picked ID
+				std::cout << "Picked node: ";
+				for (size_t i = 0; i < pickedIDs.size(); i++)
+				{
+					std::cout << pickedIDs[i] << " ";
+				}
+				std::cout << std::endl;
+
+				selection_checking();
+			}
 
 			update_aFrame();
-
-			if (mods == 2)
-			{
-				//screen_drag_mode = true;
-			}
 		}
 	}
 	else
@@ -337,37 +380,22 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 		if (action == GLFW_RELEASE && press_mouse == button)
 		{
 			press_mouse = -1;
-
-			if (GLFW_MOUSE_BUTTON_1 == button)
+			if (button == GLFW_MOUSE_BUTTON_LEFT)
 			{
+				if (bases.size() != 4)
+				{
+					std::cout << "!!!!!Why?" << std::endl;
+				}
 				// Magnet. Find the Right Place
 				arcball_rotate(magnet(last_quat, base_quat));
 				update_rubix_pos_id();
+				bases.clear();
+				bases.shrink_to_fit();
 			}
-			bases.clear();
-			bases.shrink_to_fit();
 			update_arcBallScale();
 			update_arcBallRBT();
 			//screen_drag_mode = false;
 		}
-	}
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-	{
-		double xpos, ypos;
-		glfwGetCursorPos(window, &xpos, &ypos);
-		int target = pick((int)xpos, (int)ypos, frameBufferWidth, frameBufferHeight);
-		//std::cout << "Picked node: " << target << std::endl;
-		pickedIDs.push_back(target);
-
-		// Print recent picked ID
-		std::cout << "Picked node: ";
-		for (size_t i = 0; i < pickedIDs.size(); i++)
-		{
-			std::cout << pickedIDs[i] << " ";
-		}
-		std::cout << std::endl;
-
-		selection_checking();
 	}
 }
 
@@ -621,7 +649,7 @@ void selection_checking()
 				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.y = rubix_h / 2;
-			arcballCenterRBT = target_objectRBT[1];
+			arcballCenterRBT = *target_objectRBT[1];
 			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
 		}
 		// same row
@@ -635,7 +663,7 @@ void selection_checking()
 				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.x = rubix_w / 2;
-			arcballCenterRBT = target_objectRBT[1];
+			arcballCenterRBT = *target_objectRBT[1];
 			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
 		update_arcBallScale();
