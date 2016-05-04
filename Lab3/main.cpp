@@ -145,7 +145,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 	if (MOUSE_LEFT_PRESS)
 	{
-		if (prev_x - 1e-16< 1e-8 && prev_y - 1e-16 < 1e-8) {
+		if (prev_x - 1e-16 < 1e-8 && prev_y - 1e-16 < 1e-8) {
 			prev_x = (float)xpos; prev_y = (float)ypos;
 			return;
 		}
@@ -250,13 +250,13 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 			std::cout << "m\t\t Change auxiliary frame between world-sky and sky-sky" << std::endl;
 			break;
 		case GLFW_KEY_V:
-			
+
 			break;
 		case GLFW_KEY_O:
-			
+
 			break;
 		case GLFW_KEY_M:
-			
+
 			break;
 		default:
 			break;
@@ -307,7 +307,7 @@ int main(void)
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
 	// Accept fragment if it closer to the camera than the former one
-	glDepthFunc(GL_LESS);	
+	glDepthFunc(GL_LESS);
 
 
 	Projection = glm::perspective(fov, windowWidth / windowHeight, 0.1f, 100.0f);
@@ -328,7 +328,12 @@ int main(void)
 	ground.set_model(&groundRBT);
 
 	//TODO: Initialize model by loading .obj file
-	
+	object = Model();
+	init_obj(object, "bunny.obj", glm::vec3(0.1, 0.3, 1.0));
+	object.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
+	object.set_projection(&Projection);
+	object.set_eye(&eyeRBT);
+	object.set_model(&objectRBT);
 
 	arcBall = Model();
 	init_sphere(arcBall);
@@ -347,10 +352,10 @@ int main(void)
 		eyeRBT = (view_index == 0) ? skyRBT : objectRBT;
 
 		//TODO: pass the light value to the shader
-		
+
 
 		// TODO: draw OBJ model
-		
+
 
 		// Draw wireframe of arcBall with dynamic radius
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -377,6 +382,7 @@ int main(void)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		ground.draw();
+		object.draw();
 		// Swap buffers (Double buffering)
 		glfwSwapBuffers(window);
 		glfwPollEvents();
