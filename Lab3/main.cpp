@@ -333,7 +333,8 @@ int main(void)
 	object.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	object.set_projection(&Projection);
 	object.set_eye(&eyeRBT);
-	object.set_model(&objectRBT);
+	object.set_model(&objectRBT);
+
 
 	arcBall = Model();
 	init_sphere(arcBall);
@@ -344,7 +345,8 @@ int main(void)
 	arcBall.set_model(&arcballRBT);
 
 	//TODO Setting Light Vectors	
-
+	lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
+	lightLocObject = glGetUniformLocation(object.GLSLProgramID, "uLight");
 	do {
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -352,7 +354,11 @@ int main(void)
 		eyeRBT = (view_index == 0) ? skyRBT : objectRBT;
 
 		//TODO: pass the light value to the shader
-
+		glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
+		lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
+		glUniform3f(lightLocGround, lightVec.x, lightVec.y, lightVec.z);
+		lightLocObject = glGetUniformLocation(object.GLSLProgramID, "uLight");
+		glUniform3f(lightLocObject, lightVec.x, lightVec.y, lightVec.z);
 
 		// TODO: draw OBJ model
 
