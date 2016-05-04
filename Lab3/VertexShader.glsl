@@ -3,7 +3,7 @@
 // Input vertex data, different for all executions of this shader.
 layout(location = 0) in vec3 vertexPosition_modelspace;
 //TODO: grab color value from the application
-
+layout(location = 2) in vec3 vertexColor;
 //TODO: grab normal value from the application
 
 
@@ -28,6 +28,7 @@ void main(){
 	gl_Position = Projection * wPosition;
 	
 	//TODO: pass the interpolated color value to fragment shader 
+	fragmentColor = vertexColor;
 
 	//TODO: Calculate/Pass normal of the the vertex
 	//transpose of inversed model view matrix

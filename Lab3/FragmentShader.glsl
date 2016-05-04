@@ -11,9 +11,9 @@ uniform vec3 uLight;
 
 void main(){
 	
-	color = vec3(1.0, 1.0, 1.0);
+	// color = vec3(1.0, 1.0, 1.0);
 	//TODO: Assign fragmentColor as a final fragment color
-	
+	color = fragmentColor;
 	//TODO:Assign fragmentNormal as a final fragment color
 	
 	//TODO: Phong reflection model	
