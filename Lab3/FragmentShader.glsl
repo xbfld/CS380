@@ -13,8 +13,9 @@ void main(){
 	
 	// color = vec3(1.0, 1.0, 1.0);
 	//TODO: Assign fragmentColor as a final fragment color
-	color = fragmentColor;
+	// color = fragmentColor;
 	//TODO:Assign fragmentNormal as a final fragment color
-	
+	vec3 normal = normalize(fragmentNormal);
+    color = normal;
 	//TODO: Phong reflection model	
 }
