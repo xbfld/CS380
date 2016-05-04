@@ -98,7 +98,9 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->colors.size(), &this->colors[0], GL_STATIC_DRAW);
 
 	//TODO: generate/bind buffer for normals and store the normal values
-
+	glGenBuffers(1, &this->NormalBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->normals.size(), &this ->normals[0], GL_STATIC_DRAW);
 }
 
 void Model::initialize_picking(const char* picking_vertex_shader, const char* picking_fragment_shader)
@@ -204,7 +206,9 @@ void Model::draw()
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
 	//TODO: pass the normal values to vertex shader
-
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
 	if (this->type == DRAW_TYPE::ARRAY)
 	{
@@ -276,7 +280,8 @@ void Model::cleanup()
 	glDisableVertexAttribArray(2);
 	glDeleteBuffers(1, &this->ColorBufferID);
 	//TODO: delete normal buffer
-
+	glDisableVertexAttribArray(1);
+	glDeleteBuffers(1, &this->NormalBufferID);
 
 	if (this->type == DRAW_TYPE::INDEX) glDeleteBuffers(1, &this->IndexBufferID);
 	glDeleteProgram(this->GLSLProgramID);
