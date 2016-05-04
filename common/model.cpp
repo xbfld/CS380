@@ -77,7 +77,7 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
-	
+
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
 
@@ -93,7 +93,9 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 	}
 
 	//TODO: generate/bind buffer for colors and store the color values
-
+	glGenBuffers(1, &this->ColorBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, this->ColorBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->colors.size(), &this->colors[0], GL_STATIC_DRAW);
 
 	//TODO: generate/bind buffer for normals and store the normal values
 
@@ -104,7 +106,7 @@ void Model::initialize_picking(const char* picking_vertex_shader, const char* pi
 	this->PickingProgramID = LoadShaders(picking_vertex_shader, picking_fragment_shader);
 }
 
-bool Model::loadOBJ(const char * path,	glm::vec3 color){
+bool Model::loadOBJ(const char * path, glm::vec3 color) {
 	cout << "Loading OBJ file " << path << "..." << endl;
 	vector<GLushort> elements;
 	vector<glm::vec3> vertices;
@@ -123,7 +125,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 			istringstream s(line.substr(2));
 			glm::vec3 v; s >> v.x; s >> v.y; s >> v.z; //v.w = 1.0f;
 			vertices.push_back(v);
-			
+
 		}
 		else if (line.substr(0, 2) == "f ")
 		{
@@ -132,7 +134,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 			s >> a; s >> b; s >> c;
 			a--; b--; c--;
 			elements.push_back(a); elements.push_back(b); elements.push_back(c);
-		}		
+		}
 		else if (line[0] == '#')
 		{
 			/* ignoring this line */
@@ -144,7 +146,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 	}
 
 	normals.resize(vertices.size(), glm::vec3(0.0, 0.0, 0.0));
-		
+
 	for (int i = 0; i < elements.size(); i += 3)
 	{
 		GLushort ia = elements[i];
@@ -152,18 +154,18 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 		GLushort ic = elements[i + 2];
 		glm::vec3 normal = glm::normalize(glm::cross(
 			glm::vec3(vertices[ib]) - glm::vec3(vertices[ia]),
-			glm::vec3(vertices[ic]) - glm::vec3(vertices[ia])));				
-		normals[ia] += normal; normals[ib] += normal; normals[ic] += normal;		
+			glm::vec3(vertices[ic]) - glm::vec3(vertices[ia])));
+		normals[ia] += normal; normals[ib] += normal; normals[ic] += normal;
 
 		add_vertex(vertices[ia]);
 		add_vertex(vertices[ib]);
 		add_vertex(vertices[ic]);
-		
+
 		add_color(color);
 		add_color(color);
 		add_color(color);
 	}
-	for (int i = 0; i < normals.size(); i++){
+	for (int i = 0; i < normals.size(); i++) {
 		normals[i] = glm::normalize(normals[i]);
 	}
 	for (int i = 0; i < elements.size(); i += 3)
@@ -197,11 +199,13 @@ void Model::draw()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
 	//TODO: pass the color values to vertex shader
-
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, this->ColorBufferID);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
 
 	//TODO: pass the normal values to vertex shader
 
-	
+
 	if (this->type == DRAW_TYPE::ARRAY)
 	{
 		glDrawArrays(GL_TRIANGLES, 0, this->vertices.size());
@@ -214,7 +218,7 @@ void Model::draw()
 
 void Model::drawPicking()
 {
-	if (this->objectID >= 0) 
+	if (this->objectID >= 0)
 	{
 		glUseProgram(this->PickingProgramID);
 		GLuint ProjectionID = glGetUniformLocation(this->PickingProgramID, "Projection");
@@ -225,12 +229,12 @@ void Model::drawPicking()
 		glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 		glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
 		glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
-		
+
 		float r = ((objectID >> 16) & 0xFF) / 255.0f;
 		float g = ((objectID >> 8) & 0xFF) / 255.0f;
 		float b = (objectID & 0xFF) / 255.0f;
 
-		glm::vec3 objectIDVector = glm::vec3(r,g,b);
+		glm::vec3 objectIDVector = glm::vec3(r, g, b);
 		glUniform3f(objectIDLoc, objectIDVector.x, objectIDVector.y, objectIDVector.z);
 
 		glBindVertexArray(this->VertexArrayID);
@@ -267,12 +271,13 @@ void Model::cleanup()
 	// Cleanup VBO and shader
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &this->VertexBufferID);
-	
+
 	//TODO: delete color buffer
-	
+	glDisableVertexAttribArray(2);
+	glDeleteBuffers(1, &this->ColorBufferID);
 	//TODO: delete normal buffer
-	
-	
+
+
 	if (this->type == DRAW_TYPE::INDEX) glDeleteBuffers(1, &this->IndexBufferID);
 	glDeleteProgram(this->GLSLProgramID);
 	glDeleteVertexArrays(1, &this->VertexArrayID);
