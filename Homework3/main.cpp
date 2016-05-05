@@ -82,8 +82,9 @@ void selection_checking(void);
 int rubix_encode(int, int, int);
 
 // Mouse & Keyboard input related states
-int press_mouse = -1; // -1 if not pressed else relate button ID
+int press_mouse = -1; // pressed button ID or -1 for released
 int object_mode = 1;
+bool fixed_axis_mode = true;
 bool world_sky_mode = true;
 int viewpoint_mode = 0;
 double last_xpos = 0.0f;
@@ -94,6 +95,61 @@ std::vector<quat> bases = std::vector<quat>();
 int magnet_state = -1;
 std::vector<glm::mat4 *> target_objectRBT = std::vector<glm::mat4 *>();
 std::vector<int> target_objectID = std::vector<int>();
+
+enum ROTATION_TYPE
+{
+	ALL_CUBE,
+	LINE_ORTHO,
+	LINE_PARA,
+};
+
+ROTATION_TYPE rotation_type = ALL_CUBE;
+
+// Helper function: checking fixed rotation axis
+bool is_fixed_axis(ROTATION_TYPE rtype)
+{
+	switch (rtype)
+	{
+	case ALL_CUBE:
+		return false;
+		break;
+	case LINE_ORTHO:
+		return true;
+		break;
+	case LINE_PARA:
+		return true;
+		break;
+	default:
+		return false;
+		break;
+	}
+}
+bool is_fixed_axis()
+{
+	return is_fixed_axis(rotation_type);
+}
+
+bool is_magnet_mode(ROTATION_TYPE rtype)
+{
+	switch (rtype)
+	{
+	case ALL_CUBE:
+		return false;
+		break;
+	case LINE_ORTHO:
+		return true;
+		break;
+	case LINE_PARA:
+		return true;
+		break;
+	default:
+		break;
+	}
+}
+bool is_magnet_mode()
+{
+	return is_magnet_mode(rotation_type);
+}
 
 void manipulate_targets(glm::mat4);
 
@@ -194,7 +250,7 @@ quat magnet(quat q, quat base, float sens)
 	//	q = bases[magnet_state];
 	//}
 	//return q;*/
-	
+
 	//std::cout << "----Magnet New---- " << std::endl;
 	float max_cos = cos(radians(sens));
 	float _cos;
@@ -211,7 +267,7 @@ quat magnet(quat q, quat base, float sens)
 		}
 	}
 	std::cout << "magnet_state: " << magnet_state << std::endl;
-	
+
 	if (-1 != magnet_state)
 	{
 		q = bases[magnet_state];
@@ -227,7 +283,11 @@ quat screen_to_arcball_quat(double xpos, double ypos)
 {
 	vec3 arcball_pos;
 	arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
+	if (is_fixed_axis())
+	{
 	return get_arcball_quat(arcball_pos, rotation_axis);
+	}
+	return get_arcball_quat(arcball_pos);
 }
 
 // Rotate arcball based on input quaternian
@@ -237,11 +297,23 @@ void arcball_rotate(quat cur_quat)
 	mat4 manipulate = mat4(1.0f);
 
 	// TODO: Replace literal 10.0f to variable
-	cur_quat = magnet(cur_quat, base_quat, 10.0f);
+	cur_quat = is_magnet_mode() ? magnet(cur_quat, base_quat, 10.0f): cur_quat;
 
 	d_quat = cur_quat*inverse(last_quat);
 	manipulate = glm::toMat4(d_quat);
-	manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+	switch (rotation_type)
+	{
+	case ALL_CUBE:
+		rubixCubeRbt = (aFrame * manipulate * glm::inverse(aFrame))* rubixCubeRbt;
+	case LINE_ORTHO:
+	case LINE_PARA:
+		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+		break;
+	default:
+		break;
+	}
+	arcballCenterRBT = (aFrame * manipulate * glm::inverse(aFrame))* arcballCenterRBT;
+	update_arcBallRBT();
 	last_quat = cur_quat;
 }
 // Rotate arcball based on screen pos
@@ -382,13 +454,23 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			press_mouse = -1;
 			if (button == GLFW_MOUSE_BUTTON_LEFT)
 			{
-				if (bases.size() != 4)
+				/*if (bases.size() != 4)
 				{
 					std::cout << "!!!!!Why?" << std::endl;
+				}*/
+				switch (rotation_type)
+				{
+				case ALL_CUBE:
+					break;
+				case LINE_ORTHO:
+				case LINE_PARA:
+					// Magnet. Find the Right Place
+					arcball_rotate(magnet(last_quat, base_quat));
+					update_rubix_pos_id();
+					break;
+				default:
+					break;
 				}
-				// Magnet. Find the Right Place
-				arcball_rotate(magnet(last_quat, base_quat));
-				update_rubix_pos_id();
 				bases.clear();
 				bases.shrink_to_fit();
 			}
@@ -621,12 +703,40 @@ glm::ivec3 rubix_common()
 }
 
 // Check selections
-// TODO: Setting aFrame
+// Setting arcBall
 void selection_checking()
 {
 	// Check selelction validity
-	if (pickedIDs.size() >= 2)
+	// last pickedID was 0
+	if (offsetID > pickedIDs.back())
 	{
+		rotation_type = ALL_CUBE;
+		arcballCenterRBT = rubixCubeRbt;
+		pickedIDs.clear();
+
+		update_arcBallScale();
+		update_arcBallRBT();
+
+		target_objectID.clear();
+		target_objectRBT.clear();
+		int id;
+		for (size_t d = 0; d < rubix_d; d++)
+		{
+			for (size_t h = 0; h < rubix_h; h++)
+			{
+				for (size_t w = 0; w < rubix_w; w++)
+				{
+					id = rubix_pos2id[rubix_encode(w, h, d)];
+					target_objectID.push_back(id);
+					target_objectRBT.push_back(&g_rubixRbt[id]);
+				}
+			}
+		}
+	}
+	// pickedIDs are alined
+	else if (pickedIDs.size() >= 2)
+	{
+		rotation_type = LINE_ORTHO;
 		glm::ivec3 common = rubix_common();
 		int id;
 		std::cout << "common: "
@@ -649,7 +759,8 @@ void selection_checking()
 				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.y = rubix_h / 2;
-			arcballCenterRBT = *target_objectRBT[1];
+			arcballCenterRBT = (transFact(*target_objectRBT.front()) + transFact(*target_objectRBT.back()))/2;
+			arcballCenterRBT = arcballCenterRBT * linearFact(rubixCubeRbt);
 			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
 		}
 		// same row
@@ -663,7 +774,8 @@ void selection_checking()
 				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.x = rubix_w / 2;
-			arcballCenterRBT = *target_objectRBT[1];
+			arcballCenterRBT = (transFact(*target_objectRBT.front()) + transFact(*target_objectRBT.back())) / 2;
+			arcballCenterRBT = arcballCenterRBT * linearFact(rubixCubeRbt);
 			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
 		update_arcBallScale();
