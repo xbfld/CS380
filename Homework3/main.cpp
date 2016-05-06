@@ -87,6 +87,7 @@ quat last_quat;
 quat base_quat;
 std::vector<quat> bases = std::vector<quat>();
 int magnet_state = -1;
+float magnet_power = 5.0f;
 std::vector<glm::mat4 *> target_objectRBT = std::vector<glm::mat4 *>();
 std::vector<int> target_objectID = std::vector<int>();
 
@@ -223,7 +224,7 @@ quat magnet(quat q, quat base, float sens)
 			max_cos = _cos;
 		}
 	}
-	std::cout << "magnet_state: " << magnet_state << std::endl;
+	//std::cout << "magnet_state: " << magnet_state << std::endl;
 
 	if (-1 != magnet_state)
 	{
@@ -253,8 +254,7 @@ void arcball_rotate(quat cur_quat)
 	quat d_quat;
 	mat4 manipulate = mat4(1.0f);
 
-	// TODO: Replace literal 10.0f to variable
-	cur_quat = is_magnet_mode() ? magnet(cur_quat, base_quat, 10.0f) : cur_quat;
+	cur_quat = is_magnet_mode() ? magnet(cur_quat, base_quat, magnet_power) : cur_quat;
 
 	d_quat = cur_quat*inverse(last_quat);
 	manipulate = glm::toMat4(d_quat);
@@ -518,8 +518,8 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		break;
 	case GLFW_MOUSE_BUTTON_1:
 		// Left Mouse Button Pressed
-		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
-		printf("bases size: %d\n", bases.size());
+		// printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
+		// printf("bases size: %d\n", bases.size());
 		switch (pressed_mouse_mod)
 		{
 		case 0:
@@ -598,8 +598,8 @@ void rubix_setup()
 	int r_index;
 	Model *r_model;
 	vec3 rubic_color[6] = {
-		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 0.0),
-		glm::vec3(1.0, 0.0, 1.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
+		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0),
+		glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 0.0), glm::vec3(1.0, 0.0, 1.0) };
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
 	// Alternative value
