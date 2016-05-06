@@ -39,11 +39,8 @@ float fov = 45.0f;
 float fovy = fov;
 
 // Model properties
-Model ground, redCube, greenCube;
+Model ground;
 glm::mat4 skyRBT;
-glm::mat4 g_objectRbt[2] = {
-	glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), -90.0f, glm::vec3(0.0f, 1.0f, 0.0f)), // RBT for redCube
-	glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.5f, 0.0f)) * glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f)) }; // RBT for greenCube
 glm::mat4 eyeRBT;
 glm::mat4 worldRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
@@ -160,29 +157,12 @@ void update_aFrame()
 
 void update_eye()
 {
-	/*switch (viewpoint_mode)
-	{
-	case 0:
-		eyeRBT = skyRBT;
-		break;
-	case 1:
-		eyeRBT = g_objectRbt[0];
-		break;
-	case 2:
-		eyeRBT = g_objectRbt[1];
-		break;
-	default:
-		break;
-	}*/
+	// change eyeRBT
 }
 
 void update_arcBallScale()
 {
 	double _z;
-	/*if ((0 == viewpoint_mode) && (0 == object_mode) && (world_sky_mode))
-	{
-		_z = transFact(glm::inverse(eyeRBT) * worldRBT)[3].z;
-	}*/
 	_z = transFact(glm::inverse(eyeRBT)* arcballCenterRBT)[3].z;
 	arcBallScale = compute_screen_eye_scale(_z, fovy, frameBufferHeight);
 }
@@ -229,28 +209,6 @@ bool is_close_to_stick(quat q, quat base, float sens)
 
 quat magnet(quat q, quat base, float sens)
 {
-	//std::cout << "----Magnet Old---- " << std::endl;
-	//float min_angle = sens;
-	//float _angle;
-	//magnet_state = -1;
-	//std::cout << "sens: " << sens << std::endl;
-	//for (size_t i = 0; i < bases.size(); i++)
-	//{
-	//	_angle = angle(q, bases[i]);
-	//	std::cout << "_angle: " << _angle << std::endl;
-	//	if (_angle < min_angle)
-	//	{
-	//		magnet_state = i;
-	//		min_angle = _angle;
-	//	}
-	//}
-	//std::cout << "magnet_state: " << magnet_state << std::endl;
-	///*if (-1 != magnet_state)
-	//{
-	//	q = bases[magnet_state];
-	//}
-	//return q;*/
-
 	//std::cout << "----Magnet New---- " << std::endl;
 	float max_cos = cos(radians(sens));
 	float _cos;
@@ -454,10 +412,6 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 			press_mouse = -1;
 			if (button == GLFW_MOUSE_BUTTON_LEFT)
 			{
-				/*if (bases.size() != 4)
-				{
-					std::cout << "!!!!!Why?" << std::endl;
-				}*/
 				switch (rotation_type)
 				{
 				case ALL_CUBE:
@@ -610,8 +564,7 @@ void rubix_setup()
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
 	// Alternative value
-	rubixCubeRbt = glm::translate(0.0f, -0.5f, -2.0f) *
-		glm::eulerAngleYXZ(radians(0.0f), radians(-45.0f), radians(-30.0f));
+	rubixCubeRbt = glm::eulerAngleYXZ(radians(0.0f), radians(-45.0f), radians(-30.0f));
 
 	for (size_t d = 0; d < rubix_d; d++)
 	{
@@ -884,6 +837,9 @@ int main(void)
 	glUniform3f(lightLocArc, lightVec.x, lightVec.y, lightVec.z);
 
 	rubix_setup();
+	arcballCenterRBT = rubixCubeRbt;
+	update_arcBallScale();
+	update_arcBallRBT();
 
 	pickedIDs = std::vector<int>();
 
