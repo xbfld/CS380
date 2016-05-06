@@ -54,7 +54,7 @@ int rubix_id2pos[9]{ 0 };	// Object ID to integer position
 int rubix_w = 3;	// # of columns
 int rubix_h = 3;	// # of rows
 int rubix_d = 1;	// # of layers
-GLint lightLocRubix[9];
+GLint lightLocRubix;
 int offsetID = 100;
 
 std::vector<int> pickedIDs;
@@ -79,11 +79,8 @@ void selection_checking(void);
 int rubix_encode(int, int, int);
 
 // Mouse & Keyboard input related states
-int press_mouse = -1; // pressed button ID or -1 for released
-int object_mode = 1;
-bool fixed_axis_mode = true;
-bool world_sky_mode = true;
-int viewpoint_mode = 0;
+int pressed_mouse_button = -1; // pressed button ID or -1 for released
+int pressed_mouse_mod = 0; // mods: comb(1,2,4) -> Shift, Ctrl, Alt
 double last_xpos = 0.0f;
 double last_ypos = 0.0f;
 quat last_quat;
@@ -95,6 +92,7 @@ std::vector<int> target_objectID = std::vector<int>();
 
 enum ROTATION_TYPE
 {
+	NONE,
 	ALL_CUBE,
 	LINE_ORTHO,
 	LINE_PARA,
@@ -126,6 +124,7 @@ bool is_fixed_axis()
 	return is_fixed_axis(rotation_type);
 }
 
+// Helper function: checking magnet mode
 bool is_magnet_mode(ROTATION_TYPE rtype)
 {
 	switch (rtype)
@@ -243,7 +242,7 @@ quat screen_to_arcball_quat(double xpos, double ypos)
 	arcball_pos = get_arcball_pos(xpos, frameBufferHeight - 1 - ypos);
 	if (is_fixed_axis())
 	{
-	return get_arcball_quat(arcball_pos, rotation_axis);
+		return get_arcball_quat(arcball_pos, rotation_axis);
 	}
 	return get_arcball_quat(arcball_pos);
 }
@@ -255,7 +254,7 @@ void arcball_rotate(quat cur_quat)
 	mat4 manipulate = mat4(1.0f);
 
 	// TODO: Replace literal 10.0f to variable
-	cur_quat = is_magnet_mode() ? magnet(cur_quat, base_quat, 10.0f): cur_quat;
+	cur_quat = is_magnet_mode() ? magnet(cur_quat, base_quat, 10.0f) : cur_quat;
 
 	d_quat = cur_quat*inverse(last_quat);
 	manipulate = glm::toMat4(d_quat);
@@ -285,38 +284,99 @@ void arcball_rotate(double xpos, double ypos)
 	last_ypos = ypos;
 }
 
-void update_rubix_pos_id()
+void arcball_translate_xy(double xpos, double ypos)
+{
+	double d_x = xpos - last_xpos;
+	double d_y = ypos - last_ypos;
+
+	mat4 manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) * arcBallScale);
+
+	switch (rotation_type)
+	{
+	case ALL_CUBE:
+		rubixCubeRbt = (aFrame * manipulate * glm::inverse(aFrame))* rubixCubeRbt;
+		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+		arcballCenterRBT = (aFrame * manipulate * glm::inverse(aFrame))* arcballCenterRBT;
+		update_arcBallRBT();
+	case LINE_ORTHO:
+	case LINE_PARA:
+		break;
+	default:
+		break;
+	}
+	last_xpos = xpos;
+	last_ypos = ypos;
+}
+void arcball_translate_z(double xpos, double ypos)
+{
+	double d_x = xpos - last_xpos;
+	double d_y = ypos - last_ypos;
+
+	mat4 manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) * arcBallScale);
+
+	switch (rotation_type)
+	{
+	case ALL_CUBE:
+		rubixCubeRbt = (aFrame * manipulate * glm::inverse(aFrame))* rubixCubeRbt;
+		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
+		arcballCenterRBT = (aFrame * manipulate * glm::inverse(aFrame))* arcballCenterRBT;
+		update_arcBallRBT();
+	case LINE_ORTHO:
+	case LINE_PARA:
+		break;
+	default:
+		break;
+	}
+	last_xpos = xpos;
+	last_ypos = ypos;
+}
+
+void update_rubix_pos_id(ROTATION_TYPE rtype)
 {
 	int id;
 	int pos;
 	int nid; // new id
 	std::vector<int> poses = std::vector<int>();
-	switch (magnet_state)
+	switch (rtype)
 	{
-	case 0:
-	case 1:
+	case ALL_CUBE:
 		break;
-	case 2:
-	case 3:
-		for (size_t i = 0; i < target_objectID.size(); i++)
+	case LINE_ORTHO:
+	case LINE_PARA:
+		switch (magnet_state)
 		{
-			id = target_objectID[i];
-			nid = target_objectID[target_objectID.size() - i - 1];
-			pos = rubix_id2pos[id];
-			rubix_pos2id[pos] = nid;
-			poses.push_back(pos);
+		case 0:
+		case 1:
+			break;
+		case 2:
+		case 3:
+			for (size_t i = 0; i < target_objectID.size(); i++)
+			{
+				id = target_objectID[i];
+				nid = target_objectID[target_objectID.size() - i - 1];
+				pos = rubix_id2pos[id];
+				rubix_pos2id[pos] = nid;
+				poses.push_back(pos);
+			}
+			for (size_t i = 0; i < target_objectID.size(); i++)
+			{
+				pos = poses[i];
+				rubix_id2pos[rubix_pos2id[pos]] = pos;
+			}
+			poses.clear();
+			poses.shrink_to_fit();
+			break;
+		default:
+			break;
 		}
-		for (size_t i = 0; i < target_objectID.size(); i++)
-		{
-			pos = poses[i];
-			rubix_id2pos[rubix_pos2id[pos]] = pos;
-		}
-		poses.clear();
-		poses.shrink_to_fit();
 		break;
 	default:
 		break;
 	}
+}
+void update_rubix_pos_id()
+{
+	update_rubix_pos_id(rotation_type);
 }
 
 // Helper function: Update the vertical field-of-view(float fovy in global)
@@ -363,23 +423,34 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 	// button: 0,1,2 -> L,R,M
 	// action: 0,1 -> release, press
 	// mods: comb(1,2,4) -> Shift, Ctrl, Alt
-	if (press_mouse == -1)
+	if (pressed_mouse_button == -1)
 	{
 		if (action == GLFW_PRESS)
 		{
-			press_mouse = button;
+			pressed_mouse_button = button;
+			pressed_mouse_mod = mods;
 			glfwGetCursorPos(window, &last_xpos, &last_ypos);
 			if (button == GLFW_MOUSE_BUTTON_LEFT)
 			{
+				quat co_base = quat();
 				base_quat = screen_to_arcball_quat(last_xpos, last_ypos);
 				last_quat = base_quat;
-
-				// Hard coded magnet points
-				quat co_base = base_quat*quat(0.0f, rotation_axis);
-				bases.push_back(base_quat);
-				bases.push_back(-base_quat);
-				bases.push_back(co_base);
-				bases.push_back(-co_base);
+				switch (rotation_type)
+				{
+				case ALL_CUBE:
+					break;
+				case LINE_ORTHO:
+				case LINE_PARA:
+					// Hard coded magnet points
+					co_base = base_quat*quat(0.0f, rotation_axis);
+					bases.push_back(base_quat);
+					bases.push_back(-base_quat);
+					bases.push_back(co_base);
+					bases.push_back(-co_base);
+					break;
+				default:
+					break;
+				}
 
 			}
 
@@ -407,23 +478,26 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 	}
 	else
 	{
-		if (action == GLFW_RELEASE && press_mouse == button)
+		if (action == GLFW_RELEASE && pressed_mouse_button == button)
 		{
-			press_mouse = -1;
+			pressed_mouse_button = -1;
 			if (button == GLFW_MOUSE_BUTTON_LEFT)
 			{
-				switch (rotation_type)
+				if ((pressed_mouse_mod & GLFW_MOD_SHIFT) == 0)
 				{
-				case ALL_CUBE:
-					break;
-				case LINE_ORTHO:
-				case LINE_PARA:
-					// Magnet. Find the Right Place
-					arcball_rotate(magnet(last_quat, base_quat));
-					update_rubix_pos_id();
-					break;
-				default:
-					break;
+					switch (rotation_type)
+					{
+					case ALL_CUBE:
+						break;
+					case LINE_ORTHO:
+					case LINE_PARA:
+						// Magnet. Find the Right Place
+						arcball_rotate(magnet(last_quat, base_quat));
+						update_rubix_pos_id();
+						break;
+					default:
+						break;
+					}
 				}
 				bases.clear();
 				bases.shrink_to_fit();
@@ -438,15 +512,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 // TODO: Fill up GLFW cursor position callback function
 static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	/*double d_x = xpos - last_xpos;
-	double d_y = ypos - last_ypos;
-	vec3 last_arcball_pos;
-	vec3 cur_arcball_pos;
-	quat last_quat;
-	quat cur_quat;
-	quat d_quat;
-	mat4 manipulate = mat4(1.0f);*/
-	switch (press_mouse)
+	switch (pressed_mouse_button)
 	{
 	case -1:
 		break;
@@ -454,52 +520,25 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		// Left Mouse Button Pressed
 		printf("cursor pos callbakc: Left, %f, %f\n", xpos, ypos);
 		printf("bases size: %d\n", bases.size());
-		arcball_rotate(xpos, ypos);
+		switch (pressed_mouse_mod)
+		{
+		case 0:
+			arcball_rotate(xpos, ypos);
+			break;
+		case GLFW_MOD_SHIFT:
+			arcball_translate_xy(xpos, ypos);
+			break;
+		case GLFW_MOD_CONTROL:
+			arcball_translate_z(xpos, ypos);
+		default:
+			break;
+		}
 		break;
 	case GLFW_MOUSE_BUTTON_2:
 		// Right Mouse Button Pressed
-	/*{
-		printf("cursor pos callbakc: Right, %f, %f\n", xpos, ypos);
-		if ((viewpoint_mode != object_mode)
-			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
-		{
-			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) * arcBallScale);
-		}
-		else
-		{
-			manipulate = glm::translate(vec3(d_x, -d_y, 0.0f) / arcBallScreenRadius);
-		}
-		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
-		{
-			manipulate = inverse(manipulate);
-		}
-		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
-
-		last_xpos = xpos;
-		last_ypos = ypos;
-	}*/
 		break;
 	case GLFW_MOUSE_BUTTON_3:
 		// Middle Mouse Button Pressed
-	/*{
-		printf("cursor pos callbakc: Middle, %f, %f\n", xpos, ypos);
-		if ((viewpoint_mode != object_mode)
-			|| ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode))
-		{
-			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) * arcBallScale);
-		}
-		else
-		{
-			manipulate = glm::translate(vec3(0.0f, 0.0f, d_y) / arcBallScreenRadius);
-		}
-		if ((0 == viewpoint_mode) && (0 == object_mode) && world_sky_mode)
-		{
-			manipulate = inverse(manipulate);
-		}
-		manipulate_targets(aFrame * manipulate * glm::inverse(aFrame));
-		last_xpos = xpos;
-		last_ypos = ypos;
-	}*/
 		break;
 
 	default:
@@ -559,8 +598,8 @@ void rubix_setup()
 	int r_index;
 	Model *r_model;
 	vec3 rubic_color[6] = {
-		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 1.0),
-		glm::vec3(0.0, 0.0, 1.0) , glm::vec3(1.0, 0.0, 0.0) , glm::vec3(0.0, 1.0, 0.0) };
+		glm::vec3(1.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 1.0), glm::vec3(1.0, 0.0, 0.0),
+		glm::vec3(1.0, 0.0, 1.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
 
 	glm::vec3 pos_offset = glm::vec3(-0.5f*(rubix_w - 1), -0.5f*(rubix_h - 1), -0.5f*(rubix_d - 1));
 	// Alternative value
@@ -590,8 +629,8 @@ void rubix_setup()
 
 				// Setting Light Vectors
 				glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
-				lightLocGreen = glGetUniformLocation(r_model->GLSLProgramID, "uLight");
-				glUniform3f(lightLocRubix[r_index], lightVec.x, lightVec.y, lightVec.z);
+				lightLocRubix = glGetUniformLocation(r_model->GLSLProgramID, "uLight");
+				glUniform3f(lightLocRubix, lightVec.x, lightVec.y, lightVec.z);
 			}
 		}
 	}
@@ -599,8 +638,7 @@ void rubix_setup()
 
 void rubix_draw_picking()
 {
-	// TODO: Replace literal 9 to variable
-	for (size_t r = 0; r < 9; r++)
+	for (size_t r = 0; r < rubix_w*rubix_h*rubix_d; r++)
 	{
 		rubixModel[r].drawPicking();
 	}
@@ -608,8 +646,7 @@ void rubix_draw_picking()
 
 void rubix_draw()
 {
-	// TODO: Replace literal 9 to variable
-	for (size_t r = 0; r < 9; r++)
+	for (size_t r = 0; r < rubix_w*rubix_h*rubix_d; r++)
 	{
 		rubixModel[r].draw();
 	}
@@ -617,8 +654,7 @@ void rubix_draw()
 
 void rubix_cleanup()
 {
-	// TODO: Replace literal 9 to variable
-	for (size_t r = 0; r < 9; r++)
+	for (size_t r = 0; r < rubix_w*rubix_h*rubix_d; r++)
 	{
 		rubixModel[r].cleanup();
 	}
@@ -656,12 +692,12 @@ glm::ivec3 rubix_common()
 }
 
 // Check selections
-// Setting arcBall
+// Setting arcBall, target_objectID, rotation_type
 void selection_checking()
 {
 	// Check selelction validity
 	// last pickedID was 0
-	if (offsetID > pickedIDs.back())
+	if (pickedIDs.empty() || offsetID > pickedIDs.back())
 	{
 		rotation_type = ALL_CUBE;
 		arcballCenterRBT = rubixCubeRbt;
@@ -712,7 +748,7 @@ void selection_checking()
 				target_objectRBT.push_back(&g_rubixRbt[id]);
 			}
 			common.y = rubix_h / 2;
-			arcballCenterRBT = (transFact(*target_objectRBT.front()) + transFact(*target_objectRBT.back()))/2;
+			arcballCenterRBT = (transFact(*target_objectRBT.front()) + transFact(*target_objectRBT.back())) / 2;
 			arcballCenterRBT = arcballCenterRBT * linearFact(rubixCubeRbt);
 			rotation_axis = vec3(rubixCubeRbt * vec4(1.0f, 0.0f, 0.0f, 0.0f));
 		}
@@ -731,8 +767,16 @@ void selection_checking()
 			arcballCenterRBT = arcballCenterRBT * linearFact(rubixCubeRbt);
 			rotation_axis = vec3(rubixCubeRbt * vec4(0.0f, 1.0f, 0.0f, 0.0f));
 		}
+		else
+		{
+			rotation_type = NONE;
+		}
 		update_arcBallScale();
 		update_arcBallRBT();
+	}
+	else
+	{
+		rotation_type = NONE;
 	}
 }
 
@@ -842,6 +886,8 @@ int main(void)
 	update_arcBallRBT();
 
 	pickedIDs = std::vector<int>();
+	pickedIDs.push_back(0);
+	selection_checking();
 
 	do {
 		// first pass: picking shader
@@ -865,9 +911,12 @@ int main(void)
 		ground.draw();
 
 		// DONE: Draw wireframe of arcball with dynamic radius
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		arcBall.draw();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		if (NONE != rotation_type)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			arcBall.draw();
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
 
 		// Swap buffers (Double buffering)
 		glfwSwapBuffers(window);
