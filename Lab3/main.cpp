@@ -250,13 +250,13 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 			std::cout << "m\t\t Change auxiliary frame between world-sky and sky-sky" << std::endl;
 			break;
 		case GLFW_KEY_V:
-
+			toggleEyeMode();
 			break;
 		case GLFW_KEY_O:
-
+			cycleManipulation();
 			break;
 		case GLFW_KEY_M:
-
+			cycleSkyAMatrix();
 			break;
 		default:
 			break;
