@@ -8,7 +8,7 @@
 #include "shader.hpp"
 
 using namespace std;
-
+static glm::mat4 WORLD_FRAME = glm::mat4(1.0f);
 Model::Model()
 {
 	// Initialize model information
@@ -73,10 +73,21 @@ glm::mat4* Model::get_model()
 	return this->ModelTransform;
 }
 
+void Model::set_parent(glm::mat4* parent)
+{
+	this->ParentFrame = parent;
+}
+
+glm::mat4 * Model::get_parent(void)
+{
+	return this->ParentFrame;
+}
+
 void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const char * fragmentShader_path)
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
+	this->ParentFrame = &WORLD_FRAME;
 
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
@@ -189,10 +200,12 @@ void Model::draw()
 	glUseProgram(this->GLSLProgramID);
 	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
 	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
+	GLuint ParentFrameID = glGetUniformLocation(this->GLSLProgramID, "ParentFrame");
 	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
 
 	glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 	glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
+	glUniformMatrix4fv(ParentFrameID, 1, GL_FALSE, &(*(this->ParentFrame))[0][0]);
 	glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
 
 	glBindVertexArray(this->VertexArrayID);

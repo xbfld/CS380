@@ -41,7 +41,8 @@ Model ground, object;
 glm::mat4 skyRBT;
 glm::mat4 eyeRBT;
 const glm::mat4 worldRBT = glm::mat4(1.0f);
-glm::mat4 objectRBT = glm::scale(7.0f, 7.0f, 7.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+glm::mat4 objectFrame = glm::scale(7.0f, 7.0f, 7.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+glm::mat4 objectRBT = glm::mat4(1.0f);
 glm::mat4 arcballRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
 
@@ -334,6 +335,7 @@ int main(void)
 	object.set_projection(&Projection);
 	object.set_eye(&eyeRBT);
 	object.set_model(&objectRBT);
+	object.set_parent(&objectFrame);
 
 
 	arcBall = Model();
@@ -384,7 +386,7 @@ int main(void)
 			);
 		arcBallScale = ScreenToEyeScale * arcBallScreenRadius;
 		arcballRBT = arcballRBT * glm::scale(worldRBT, glm::vec3(arcBallScale, arcBallScale, arcBallScale));
-		//arcBall.draw();
+		arcBall.draw();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		ground.draw();
