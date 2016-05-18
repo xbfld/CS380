@@ -53,7 +53,7 @@ bool MOUSE_LEFT_PRESS = false; bool MOUSE_MIDDLE_PRESS = false; bool MOUSE_RIGHT
 glm::mat4 m = glm::mat4(1.0f);
 
 // Manipulation index
-int object_index = 0; int view_index = 0; int sky_type = 0;
+int object_index = 1; int view_index = 0; int sky_type = 0;
 
 // Arcball manipulation
 Model arcBall;
@@ -312,7 +312,7 @@ int main(void)
 
 
 	Projection = glm::perspective(fov, windowWidth / windowHeight, 0.1f, 100.0f);
-	skyRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.25, 4.0));
+	skyRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.25, 8.0));
 
 	aFrame = linearFact(skyRBT);
 
