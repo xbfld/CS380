@@ -41,7 +41,7 @@ Model ground, object;
 glm::mat4 skyRBT;
 glm::mat4 eyeRBT;
 const glm::mat4 worldRBT = glm::mat4(1.0f);
-glm::mat4 objectFrame = glm::scale(7.0f, 7.0f, 7.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+glm::mat4 objectOffsetFrame = glm::scale(9.0f, 9.0f, 9.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(0.03f,-0.08f,0.0f));
 glm::mat4 objectRBT = glm::mat4(1.0f);
 glm::mat4 arcballRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
@@ -335,7 +335,7 @@ int main(void)
 	object.set_projection(&Projection);
 	object.set_eye(&eyeRBT);
 	object.set_model(&objectRBT);
-	object.set_parent(&objectFrame);
+	object.set_offset(&objectOffsetFrame);
 
 
 	arcBall = Model();

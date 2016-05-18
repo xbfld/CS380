@@ -73,21 +73,21 @@ glm::mat4* Model::get_model()
 	return this->ModelTransform;
 }
 
-void Model::set_parent(glm::mat4* parent)
+void Model::set_offset(glm::mat4* parent)
 {
-	this->ParentFrame = parent;
+	this->OffsetFrame = parent;
 }
 
-glm::mat4 * Model::get_parent(void)
+glm::mat4 * Model::get_offset(void)
 {
-	return this->ParentFrame;
+	return this->OffsetFrame;
 }
 
 void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const char * fragmentShader_path)
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
-	this->ParentFrame = &WORLD_FRAME;
+	this->OffsetFrame = &WORLD_FRAME;
 
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
@@ -200,12 +200,12 @@ void Model::draw()
 	glUseProgram(this->GLSLProgramID);
 	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
 	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
-	GLuint ParentFrameID = glGetUniformLocation(this->GLSLProgramID, "ParentFrame");
+	GLuint ParentFrameID = glGetUniformLocation(this->GLSLProgramID, "OffsetFrame");
 	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
 
 	glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 	glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
-	glUniformMatrix4fv(ParentFrameID, 1, GL_FALSE, &(*(this->ParentFrame))[0][0]);
+	glUniformMatrix4fv(ParentFrameID, 1, GL_FALSE, &(*(this->OffsetFrame))[0][0]);
 	glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
 
 	glBindVertexArray(this->VertexArrayID);

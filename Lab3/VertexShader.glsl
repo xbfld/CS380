@@ -14,7 +14,7 @@ out vec3 fragmentColor;
 out vec3 fragmentNormal;
 
 uniform mat4 ModelTransform;
-uniform mat4 ParentFrame;
+uniform mat4 OffsetFrame;
 uniform mat4 Eye;
 uniform mat4 Projection;
 uniform vec3 uLight;
@@ -22,7 +22,7 @@ uniform vec3 uLight;
 void main(){
 
 	// Output position of the vertex, in clip space : MVP * position
-	mat4 MVM = inverse(Eye) * ParentFrame * ModelTransform;
+	mat4 MVM = inverse(Eye) * ModelTransform * OffsetFrame ;
 		
 	vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
 	fragmentPosition = wPosition.xyz;
