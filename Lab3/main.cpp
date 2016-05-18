@@ -309,7 +309,10 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 	// Accept fragment if it closer to the camera than the former one
 	glDepthFunc(GL_LESS);
-
+	// Enable culling
+	// glEnable(GL_CULL_FACE);
+	// Backface culling
+	glCullFace(GL_BACK);
 
 	Projection = glm::perspective(fov, windowWidth / windowHeight, 0.1f, 100.0f);
 	skyRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.25, 8.0));
@@ -386,7 +389,9 @@ int main(void)
 			);
 		arcBallScale = ScreenToEyeScale * arcBallScreenRadius;
 		arcballRBT = arcballRBT * glm::scale(worldRBT, glm::vec3(arcBallScale, arcBallScale, arcBallScale));
+		glEnable(GL_CULL_FACE);
 		arcBall.draw();
+		glDisable(GL_CULL_FACE);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		ground.draw();
