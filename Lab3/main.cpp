@@ -61,6 +61,46 @@ float arcBallScreenRadius = 0.25f * min(windowWidth, windowHeight);
 float arcBallScale = 0.01f; float ScreenToEyeScale = 0.01f;
 float prev_x = 0.0f; float prev_y = 0.0f;
 
+struct DirectionalLight
+{
+	vec3 direction;
+
+	// contains color and intensity
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+struct PointLight
+{
+	vec3 position;
+	
+	// coefficient for falloff function
+	float c0;	// constant coefficient
+	float c1;	// linear coefficient
+	float c2;	// quadratic coefficient
+	float c3;	// cubic coefficient
+
+	// contains color and intensity
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
+struct SpotLight
+{
+	vec3 position;
+	vec3 direction;
+
+	// cosine of corn angle
+	float radius_inner;
+	float radius_outer;
+
+	// contains color and intensity
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
 static bool non_ego_cube_manipulation()
 {
 	return object_index != 0 && view_index != object_index;
