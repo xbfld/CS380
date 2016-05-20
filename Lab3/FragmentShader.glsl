@@ -49,12 +49,12 @@ struct SpotLight
 
 uniform DirectionalLight dLight;
 uniform PointLight pLight;
-uniform SpotLight slight;
+uniform SpotLight sLight;
 
 vec3 MonoColor(vec3);
-vec3 DLightColor(vec3);
+vec3 DLightColor(DirectionalLight light, vec3 normal, vec3 fpos);
 vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos);
-vec3 SLightColor(vec3);
+vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos);
 
 void main(){
 	
@@ -76,7 +76,9 @@ void main(){
     // vec3 intensity = fragmentColor *diffuse + vec3(0.6, 0.6, 0.6)*specular;
     // color = floor(pow(intensity, vec3(1.0 / 2.2))*3)/3.0f;
 
-    color = PLightColor(pLight, fragmentNormal, fragmentPosition);
+    color = DLightColor(dLight, fragmentNormal, fragmentPosition)
+          + PLightColor(pLight, fragmentNormal, fragmentPosition)
+          + SLightColor(sLight, fragmentNormal, fragmentPosition);
 
     // Toon Shading
     // vec3 normal = normalize(fragmentNormal);
@@ -94,6 +96,23 @@ vec3 MonoColor(vec3 c)
     return c;
 }
 
+vec3 DLightColor(DirectionalLight light, vec3 normal, vec3 fpos)
+{
+    vec3 tolight = normalize(-light.direction);
+    vec3 toV = -normalize(vec3(fpos));
+    vec3 h = normalize(toV + tolight);
+    vec3 _normal = normalize(normal);
+    
+    float spec = pow(max(0.0, dot(h, _normal)), 64.0); // material shiness = 64.0
+    float diff = max(0.0, dot(_normal, tolight));
+
+    vec3 ambient = light.ambient *  vec3(0.0, 0.0, 0.0); // material ambient
+    vec3 diffuse = light.diffuse *  diff * fragmentColor; // material diffuse
+    vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
+
+    vec3 intensity = (ambient + diffuse + specular);
+    return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
+ }
 vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
 {
     vec3 tolight = normalize(light.position - fpos);
@@ -111,5 +130,25 @@ vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
     vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
 
     vec3 intensity = attenuation * (ambient + diffuse + specular);
+    return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
+ }
+vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos)
+{
+    vec3 tolight = normalize(light.position - fpos);
+    vec3 toV = -normalize(vec3(fpos));
+    vec3 h = normalize(toV + tolight);
+    vec3 _normal = normalize(normal);
+    
+    float spec = pow(max(0.0, dot(h, _normal)), 64.0); // material shiness = 64.0
+    float diff = max(0.0, dot(_normal, tolight));
+
+    vec3 ambient = light.ambient *  vec3(0.0, 0.0, 0.0); // material ambient
+    vec3 diffuse = light.diffuse *  diff * fragmentColor; // material diffuse
+    vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
+
+    float theta = dot(tolight, normalize(-light.direction)); 
+    float epsilon = light.radius_inner - light.radius_outer;
+
+    vec3 intensity = (ambient + diffuse + specular) * clamp((theta - light.radius_outer) / epsilon, 0.0, 1.0);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
  }

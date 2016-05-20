@@ -101,9 +101,17 @@ struct SpotLight
 	vec3 specular;
 };
 
-DirectionalLight dLight{ vec3(1.0f), vec3(1.0f), vec3(1.0f), vec3(1.0f)};
-PointLight pLight{vec3(1.0f), vec3(1.0f, 0.0f, 0.03f), vec3(1.0f), vec3(1.0f), vec3(1.0f)};
-SpotLight sLight;
+const vec3 RED(1.0f, 0.0f, 0.0f);
+const vec3 GREEN(0.0f, 1.0f, 0.0f);
+const vec3 BLUE(0.0f, 0.0f, 1.0f);
+
+//const vec3 RED(0.0f, 0.0f, 0.0f);
+//const vec3 GREEN(0.0f, 0.0f, 0.0f);
+//const vec3 BLUE(0.0f, 0.0f, 0.0f);
+
+DirectionalLight dLight{ vec3(1.0f), RED, RED, RED };
+PointLight pLight{ vec3(1.0f), vec3(1.0f, 0.0f, 0.03f), GREEN, GREEN, GREEN };
+SpotLight sLight{ vec3(1.0f), vec3(-1.0f), 0.7f, 0.4f, BLUE, BLUE, BLUE };
 
 static bool non_ego_cube_manipulation()
 {

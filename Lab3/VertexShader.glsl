@@ -26,7 +26,7 @@ void main(){
 	vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
 	fragmentPosition = wPosition.xyz;
 	gl_Position = Projection * wPosition;
-	
+
 	//TODO: pass the interpolated color value to fragment shader 
 	fragmentColor = vertexColor;
 
