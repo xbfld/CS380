@@ -17,7 +17,7 @@ uniform mat4 ModelTransform;
 uniform mat4 OffsetFrame;
 uniform mat4 Eye;
 uniform mat4 Projection;
-uniform vec3 uLight;
+//uniform vec3 uLight;
 
 void main(){
 

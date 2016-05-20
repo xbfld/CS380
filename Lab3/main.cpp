@@ -85,7 +85,6 @@ struct PointLight
 	vec3 diffuse;
 	vec3 specular;
 };
-
 struct SpotLight
 {
 	vec3 position;
@@ -390,8 +389,8 @@ int main(void)
 	arcBall.set_model(&arcballRBT);
 
 	//TODO Setting Light Vectors	
-	lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
-	lightLocObject = glGetUniformLocation(object.GLSLProgramID, "uLight");
+	/*lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
+	lightLocObject = glGetUniformLocation(object.GLSLProgramID, "uLight");*/
 	do {
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -400,10 +399,22 @@ int main(void)
 
 		//TODO: pass the light value to the shader
 		glm::vec3 lightVec = glm::vec3(0.0f, 1.0f, 0.0f);
-		lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
+		/*lightLocGround = glGetUniformLocation(ground.GLSLProgramID, "uLight");
 		glUniform3f(lightLocGround, lightVec.x, lightVec.y, lightVec.z);
 		lightLocObject = glGetUniformLocation(object.GLSLProgramID, "uLight");
-		glUniform3f(lightLocObject, lightVec.x, lightVec.y, lightVec.z);
+		glUniform3f(lightLocObject, lightVec.x, lightVec.y, lightVec.z);*/
+		glUseProgram(ground.GLSLProgramID);
+		glUniform3f(glGetUniformLocation(ground.GLSLProgramID, "pLight.position"), lightVec.x, lightVec.y, lightVec.z);		glUniform3f(glGetUniformLocation(ground.GLSLProgramID, "pLight.coefficient"), 1.0f, 0.0f, 0.05f);
+		glUniform3f(glGetUniformLocation(ground.GLSLProgramID, "pLight.ambient"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ground.GLSLProgramID, "pLight.diffuse"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ground.GLSLProgramID, "pLight.specular"), 1.0f, 1.0f, 1.0f);
+
+		glUseProgram(object.GLSLProgramID);
+		glUniform3f(glGetUniformLocation(object.GLSLProgramID, "pLight.position"), lightVec.x, lightVec.y, lightVec.z);		glUniform3f(glGetUniformLocation(object.GLSLProgramID, "pLight.coefficient"), 1.0f, 0.0f, 0.05f);
+		glUniform3f(glGetUniformLocation(object.GLSLProgramID, "pLight.ambient"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(object.GLSLProgramID, "pLight.diffuse"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(object.GLSLProgramID, "pLight.specular"), 1.0f, 1.0f, 1.0f);
+
 
 		// TODO: draw OBJ model
 
