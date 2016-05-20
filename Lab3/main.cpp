@@ -309,6 +309,14 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	}
 }
 
+void passing_dLight(Model *m, DirectionalLight dL)
+{
+	glUseProgram(m->GLSLProgramID);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.direction"), dL.direction.x, dL.direction.y, dL.direction.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.ambient"), dL.ambient.r, dL.ambient.g, dL.ambient.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.diffuse"), dL.diffuse.r, dL.diffuse.g, dL.diffuse.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.specular"), dL.specular.r, dL.specular.g, dL.specular.b);
+}
 void passing_pLight(Model *m, PointLight pL)
 {
 	glUseProgram(m->GLSLProgramID);
@@ -317,6 +325,17 @@ void passing_pLight(Model *m, PointLight pL)
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.ambient"), pL.ambient.r, pL.ambient.g, pL.ambient.b);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.diffuse"), pL.diffuse.r, pL.diffuse.g, pL.diffuse.b);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.specular"), pL.specular.r, pL.specular.g, pL.specular.b);
+}
+void passing_sLight(Model *m, SpotLight sL)
+{
+	glUseProgram(m->GLSLProgramID);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.position"), sL.position.x, sL.position.y, sL.position.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.direction"), sL.direction.x, sL.direction.y, sL.direction.z);
+	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_inner"), sL.radius_inner);
+	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_outer"), sL.radius_outer);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.ambient"), sL.ambient.r, sL.ambient.g, sL.ambient.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.diffuse"), sL.diffuse.r, sL.diffuse.g, sL.diffuse.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.specular"), sL.specular.r, sL.specular.g, sL.specular.b);
 }
 
 int main(void)
@@ -410,9 +429,14 @@ int main(void)
 		eyeRBT = (view_index == 0) ? skyRBT : objectRBT;
 
 		//TODO: pass the light value to the shader
-		
+
+		passing_dLight(&ground, dLight);
 		passing_pLight(&ground, pLight);
+		passing_sLight(&ground, sLight);
+
+		passing_dLight(&object, dLight);
 		passing_pLight(&object, pLight);
+		passing_sLight(&object, sLight);
 
 		// TODO: draw OBJ model
 

@@ -47,7 +47,6 @@ struct SpotLight
 	vec3 specular;
 };
 
-// uniform vec3 uLight;
 uniform DirectionalLight dLight;
 uniform PointLight pLight;
 uniform SpotLight slight;
