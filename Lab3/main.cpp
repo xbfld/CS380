@@ -104,14 +104,15 @@ struct SpotLight
 const vec3 RED(1.0f, 0.0f, 0.0f);
 const vec3 GREEN(0.0f, 1.0f, 0.0f);
 const vec3 BLUE(0.0f, 0.0f, 1.0f);
+const vec3 BLACK(0.0f, 0.0f, 0.0f);
 
 //const vec3 RED(0.0f, 0.0f, 0.0f);
 //const vec3 GREEN(0.0f, 0.0f, 0.0f);
 //const vec3 BLUE(0.0f, 0.0f, 0.0f);
 
-DirectionalLight dLight{ vec3(1.0f), RED, RED, RED };
-PointLight pLight{ vec3(1.0f), vec3(1.0f, 0.0f, 0.03f), GREEN, GREEN, GREEN };
-SpotLight sLight{ vec3(1.0f), vec3(-1.0f), 0.7f, 0.4f, BLUE, BLUE, BLUE };
+DirectionalLight dLight{ vec3(1.0f), BLACK, BLACK, BLACK };
+PointLight pLight{ vec3(1.0f), vec3(1.0f, 0.0f, 0.03f), BLACK, BLACK, BLACK };
+SpotLight sLight{ vec3(0.0f,-2.0f,0.0f), vec3(0.0f,1.0f,0.0f), 0.3f, 0.2f, BLACK, BLUE, BLUE };
 
 static bool non_ego_cube_manipulation()
 {
@@ -319,16 +320,18 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 
 void passing_dLight(Model *m, DirectionalLight dL)
 {
+	vec3 d = vec3(Projection * inverse(eyeRBT) * vec4(dL.direction, 0.0f));
 	glUseProgram(m->GLSLProgramID);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.direction"), dL.direction.x, dL.direction.y, dL.direction.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.direction"), d.x, d.y, d.z);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.ambient"), dL.ambient.r, dL.ambient.g, dL.ambient.b);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.diffuse"), dL.diffuse.r, dL.diffuse.g, dL.diffuse.b);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.specular"), dL.specular.r, dL.specular.g, dL.specular.b);
 }
 void passing_pLight(Model *m, PointLight pL)
 {
+	vec3 p = vec3(Projection * inverse(eyeRBT) * vec4(pL.position, 1.0f));
 	glUseProgram(m->GLSLProgramID);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.position"), pL.position.x, pL.position.y, pL.position.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.position"), p.x, p.y, p.z);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.coefficient"), pL.coefficient.x, pL.coefficient.y, pL.coefficient.z);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.ambient"), pL.ambient.r, pL.ambient.g, pL.ambient.b);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.diffuse"), pL.diffuse.r, pL.diffuse.g, pL.diffuse.b);
@@ -336,9 +339,11 @@ void passing_pLight(Model *m, PointLight pL)
 }
 void passing_sLight(Model *m, SpotLight sL)
 {
+	vec3 d = vec3(Projection * inverse(eyeRBT) * vec4(sL.direction, 0.0f));
+	vec3 p = vec3(Projection * inverse(eyeRBT) * vec4(sL.position, 1.0f));
 	glUseProgram(m->GLSLProgramID);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.position"), sL.position.x, sL.position.y, sL.position.z);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.direction"), sL.direction.x, sL.direction.y, sL.direction.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.direction"), d.x, d.y, d.z);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.position"), p.x, p.y, p.z);
 	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_inner"), sL.radius_inner);
 	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_outer"), sL.radius_outer);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.ambient"), sL.ambient.r, sL.ambient.g, sL.ambient.b);
