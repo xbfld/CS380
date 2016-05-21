@@ -88,6 +88,9 @@ void init_ground(Model &model)
 	model.add_color(color);
 	model.add_color(color);
 	model.add_color(color);
+
+	Material m{ color, color, color, 64.0 };
+	model.set_material(m);
 }
 
 void init_sphere(Model &model)
@@ -124,6 +127,9 @@ void init_sphere(Model &model)
 			model.add_index(r * sectors + (s + 1)); // 2
 		}
 	}
+
+	Material m{ glm::vec3(0.0f), glm::vec3(0.1f,0.35f,0.1f), glm::vec3(0.45f, 0.55f, 0.45f), 32.0 };
+	model.set_material(m);
 }
 
 void init_obj(Model &model, char *path, glm::vec3 color){

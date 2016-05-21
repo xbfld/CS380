@@ -88,7 +88,8 @@ void main(){
             color = floor(color*3)/3.0;
 
             vec3 normal = normalize(fragmentNormal);
-            color = floor(dot(normal,normalize(vec3(1.0,2.0,2.0)))*3)/3.0*vec3(1.0,0.6,0.7); // Apply gamma correction 
+            color = floor(dot(normal,normalize(vec3(1.0,2.0,2.0)))*3)/3.0*vec3(1.0,0.6,0.7); // Apply gamma correction
+            break;
         default:
             color = vec3(0.4,0.5,0.6);
             break;
@@ -100,6 +101,9 @@ void main(){
 
     // color = floor(color*3)/3.0;
 
+            color = DLightColor(dLight, fragmentNormal, fragmentPosition)
+                  + PLightColor(pLight, fragmentNormal, fragmentPosition)
+                  + SLightColor(sLight, fragmentNormal, fragmentPosition);
 }
 
 vec3 MonoColor(vec3 c)

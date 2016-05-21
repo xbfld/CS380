@@ -83,11 +83,32 @@ glm::mat4 * Model::get_offset(void)
 	return this->OffsetFrame;
 }
 
+Material Model::get_material(void)
+{
+	return this->material;
+}
+
+void Model::set_material(Material m)
+{
+	this->material = m;
+}
+
+SHADER_TYPE Model::get_shader_type(void)
+{
+	return this->shader_type;
+}
+
+void Model::set_shader_type(SHADER_TYPE s)
+{
+	this->shader_type = s;
+}
+
 void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const char * fragmentShader_path)
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
 	this->OffsetFrame = &WORLD_FRAME;
+	this->shader_type = LAST;
 
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
@@ -192,6 +213,9 @@ bool Model::loadOBJ(const char * path, glm::vec3 color) {
 		add_normal(normals[ic]);
 	}
 
+	Material m{ color, color, color, 64.0 };
+	set_material(m);
+
 	return true;
 }
 
@@ -207,6 +231,12 @@ void Model::draw()
 	glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
 	glUniformMatrix4fv(ParentFrameID, 1, GL_FALSE, &(*(this->OffsetFrame))[0][0]);
 	glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
+
+	glUniform3f(glGetUniformLocation(this->GLSLProgramID, "material.ambient"), this->material.ambient.x, this->material.ambient.y, this->material.ambient.z);
+	glUniform3f(glGetUniformLocation(this->GLSLProgramID, "material.diffuse"), this->material.diffuse.x, this->material.diffuse.y, this->material.diffuse.z);
+	glUniform3f(glGetUniformLocation(this->GLSLProgramID, "material.specular"), this->material.specular.x, this->material.specular.y, this->material.specular.z);
+	glUniform1f(glGetUniformLocation(this->GLSLProgramID, "material.shiness"), this->material.shiness);
+	glUniform1i(glGetUniformLocation(this->GLSLProgramID, "shaderType"), this->shader_type);
 
 	glBindVertexArray(this->VertexArrayID);
 	glEnableVertexAttribArray(0);

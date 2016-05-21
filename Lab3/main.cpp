@@ -105,14 +105,19 @@ const vec3 RED(1.0f, 0.0f, 0.0f);
 const vec3 GREEN(0.0f, 1.0f, 0.0f);
 const vec3 BLUE(0.0f, 0.0f, 1.0f);
 const vec3 BLACK(0.0f, 0.0f, 0.0f);
+const vec3 WHITE(1.0f, 1.0f, 1.0f);
+
+const Material MATERIAL_PLASTIC_GREEN{ glm::vec3(0.0f), glm::vec3(0.1f,0.35f,0.1f), glm::vec3(0.45f, 0.55f, 0.45f), 32.0 };
+const Material MATERIAL_BRONZE{ glm::vec3(0.2125f,0.1275f,0.054f), glm::vec3(0.714f,0.4284f,0.18144f), glm::vec3(0.393548f, 0.271906f, 0.166721f), 25.6 };
+const Material MATERIAL_COPPER{ glm::vec3(0.19125,0.0735,0.0225), glm::vec3(0.7038,0.27048,0.0828), glm::vec3(0.256777, 0.137622, 0.086014), 12.8 };
 
 //const vec3 RED(0.0f, 0.0f, 0.0f);
 //const vec3 GREEN(0.0f, 0.0f, 0.0f);
 //const vec3 BLUE(0.0f, 0.0f, 0.0f);
 
-DirectionalLight dLight{ vec3(1.0f), BLACK, BLACK, BLACK };
-PointLight pLight{ vec3(1.0f), vec3(1.0f, 0.0f, 0.03f), BLACK, BLACK, BLACK };
-SpotLight sLight{ vec3(0.0f,-2.0f,0.0f), vec3(0.0f,1.0f,0.0f), 0.3f, 0.2f, BLACK, BLUE, BLUE };
+DirectionalLight dLight{ vec3(0.0f,-1.0f,0.0f), WHITE*0.005f,WHITE, WHITE };
+PointLight pLight{ vec3(2.0f), vec3(1.0f, 0.0f, 0.05f), BLACK, BLACK, BLACK };
+SpotLight sLight{ vec3(0.0f,2.0f,0.0f), vec3(0.0f,-1.0f,0.0f), 0.8f, 0.75f, BLACK, BLACK, BLACK };
 
 static bool non_ego_cube_manipulation()
 {
@@ -323,9 +328,9 @@ void passing_dLight(Model *m, DirectionalLight dL)
 	vec3 d = vec3(inverse(eyeRBT) * vec4(dL.direction, 0.0f));
 	glUseProgram(m->GLSLProgramID);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.direction"), d.x, d.y, d.z);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.ambient"), dL.ambient.r, dL.ambient.g, dL.ambient.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.diffuse"), dL.diffuse.r, dL.diffuse.g, dL.diffuse.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.specular"), dL.specular.r, dL.specular.g, dL.specular.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.illumination.ambient"), dL.ambient.r, dL.ambient.g, dL.ambient.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.illumination.diffuse"), dL.diffuse.r, dL.diffuse.g, dL.diffuse.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "dLight.illumination.specular"), dL.specular.r, dL.specular.g, dL.specular.b);
 }
 void passing_pLight(Model *m, PointLight pL)
 {
@@ -333,9 +338,9 @@ void passing_pLight(Model *m, PointLight pL)
 	glUseProgram(m->GLSLProgramID);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.position"), p.x, p.y, p.z);
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.coefficient"), pL.coefficient.x, pL.coefficient.y, pL.coefficient.z);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.ambient"), pL.ambient.r, pL.ambient.g, pL.ambient.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.diffuse"), pL.diffuse.r, pL.diffuse.g, pL.diffuse.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.specular"), pL.specular.r, pL.specular.g, pL.specular.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.illumination.ambient"), pL.ambient.r, pL.ambient.g, pL.ambient.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.illumination.diffuse"), pL.diffuse.r, pL.diffuse.g, pL.diffuse.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "pLight.illumination.specular"), pL.specular.r, pL.specular.g, pL.specular.b);
 }
 void passing_sLight(Model *m, SpotLight sL)
 {
@@ -346,9 +351,9 @@ void passing_sLight(Model *m, SpotLight sL)
 	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.direction"), d.x, d.y, d.z);
 	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_inner"), sL.radius_inner);
 	glUniform1f(glGetUniformLocation(m->GLSLProgramID, "sLight.radius_outer"), sL.radius_outer);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.ambient"), sL.ambient.r, sL.ambient.g, sL.ambient.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.diffuse"), sL.diffuse.r, sL.diffuse.g, sL.diffuse.b);
-	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.specular"), sL.specular.r, sL.specular.g, sL.specular.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.illumination.ambient"), sL.ambient.r, sL.ambient.g, sL.ambient.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.illumination.diffuse"), sL.diffuse.r, sL.diffuse.g, sL.diffuse.b);
+	glUniform3f(glGetUniformLocation(m->GLSLProgramID, "sLight.illumination.specular"), sL.specular.r, sL.specular.g, sL.specular.b);
 }
 
 int main(void)
@@ -419,13 +424,14 @@ int main(void)
 
 	//TODO: Initialize model by loading .obj file
 	object = Model();
-	init_obj(object, "bunny.obj", glm::vec3(0.1, 0.3, 1.0));
+	init_obj(object, "bunny.obj", glm::vec3(1.0, 1.0, 1.0));
 	object.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	object.set_projection(&Projection);
 	object.set_eye(&eyeRBT);
 	object.set_model(&objectRBT);
 	object.set_offset(&objectOffsetFrame);
-
+	object.set_material(MATERIAL_COPPER);
+	//object.set_material(MATERIAL_BRONZE);
 
 	arcBall = Model();
 	init_sphere(arcBall);
