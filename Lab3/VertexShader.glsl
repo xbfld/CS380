@@ -12,6 +12,9 @@ layout(location = 1) in vec3 vertexNormal_modelspace;
 out vec3 fragmentPosition;
 out vec3 fragmentColor;
 out vec3 fragmentNormal;
+flat out vec3 fragmentFlatPosition;
+flat out vec3 fragmentFlatColor;
+flat out vec3 fragmentFlatNormal;
 
 uniform mat4 ModelTransform;
 uniform mat4 OffsetFrame;
@@ -20,25 +23,27 @@ uniform mat4 Projection;
 
 void main(){
 
-	// Output position of the vertex, in clip space : MVP * position
-	mat4 MVM = inverse(Eye) * ModelTransform * OffsetFrame ;
-		
-	vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
-	fragmentPosition = wPosition.xyz;
-	gl_Position = Projection * wPosition;
+    // Output position of the vertex, in clip space : MVP * position
+    mat4 MVM = inverse(Eye) * ModelTransform * OffsetFrame ;
 
-	//TODO: pass the interpolated color value to fragment shader 
-	fragmentColor = vertexColor;
+    vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
+    fragmentPosition = wPosition.xyz;
+    fragmentFlatPosition = wPosition.xyz;
+    gl_Position = Projection * wPosition;
 
-	//TODO: Calculate/Pass normal of the the vertex
-	//transpose of inversed model view matrix
-	mat4 invm = inverse(MVM);
-	invm[0][3] = 0; invm[1][3] = 0; invm[2][3] = 0;
-	mat4 NVM = transpose(invm);
-	vec4 tnormal = vec4(vertexNormal_modelspace, 0.0);
-	fragmentNormal = vec3(NVM * tnormal);
+    //TODO: pass the interpolated color value to fragment shader 
+    fragmentColor = vertexColor;
+    fragmentFlatColor = vertexColor;
 
-	
+    //TODO: Calculate/Pass normal of the the vertex
+    //transpose of inversed model view matrix
+    mat4 invm = inverse(MVM);
+    invm[0][3] = 0; invm[1][3] = 0; invm[2][3] = 0;
+    mat4 NVM = transpose(invm);
+    vec4 tnormal = vec4(vertexNormal_modelspace, 0.0);
+    fragmentNormal = vec3(NVM * tnormal);
+    fragmentFlatNormal = fragmentNormal;
+    
     // Gouraud shading
     // vec3 tolight = normalize(uLight - fragmentPosition);
     // vec3 toV = -normalize(vec3(fragmentPosition));

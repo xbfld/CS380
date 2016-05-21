@@ -3,18 +3,25 @@
 in vec3 fragmentPosition;
 in vec3 fragmentColor;
 in vec3 fragmentNormal;
+flat in vec3 fragmentFlatPosition;
+flat in vec3 fragmentFlatColor;
+flat in vec3 fragmentFlatNormal;
 
 // Ouput data
 out vec3 color;
 
+// contains color and intensity
+struct Illumination
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;    
+};
 struct DirectionalLight
 {
-	vec3 direction;
+    vec3 direction;
 
-	// contains color and intensity
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+    Illumination illumination;
 };
 struct PointLight
 {
@@ -27,10 +34,7 @@ struct PointLight
 	// float c3;	// cubic coefficient
     vec3 coefficient;
 
-	// contains color and intensity
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+	Illumination illumination;
 };
 struct SpotLight
 {
@@ -41,53 +45,60 @@ struct SpotLight
 	float radius_inner;
 	float radius_outer;
 
-	// contains color and intensity
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+    Illumination illumination;
+};
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shiness;
 };
 
 uniform DirectionalLight dLight;
 uniform PointLight pLight;
 uniform SpotLight sLight;
+uniform Material material;
+uniform int shaderType;
 
 vec3 MonoColor(vec3);
 vec3 DLightColor(DirectionalLight light, vec3 normal, vec3 fpos);
 vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos);
 vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos);
+vec3 BlinnPhong(vec3 l, vec3 p, vec3 n, Illumination i, Material m);
 
 void main(){
-	
-	// color = MonoColor(vec3(1.0,1.0,1.0));
-	//TODO: Assign fragmentColor as a final fragment color
-	// color = fragmentColor;
-	//TODO:Assign fragmentNormal as a final fragment color
-	// vec3 normal = normalize(fragmentNormal);
-    // color = normal;
-    // TODO: Phong reflection model
 
-    // Phong chage
-    // vec3 tolight = normalize(uLight - fragmentPosition);
-    // vec3 toV = -normalize(vec3(fragmentPosition));
-    // vec3 h = normalize(toV + tolight);
-    // vec3 normal = normalize(fragmentNormal);
-    // float specular = pow(max(0.0, dot(h, normal)), 64.0);
-    // float diffuse = max(0.0, dot(normal, tolight));
-    // vec3 intensity = fragmentColor *diffuse + vec3(0.6, 0.6, 0.6)*specular;
-    // color = floor(pow(intensity, vec3(1.0 / 2.2))*3)/3.0f;
+    switch(shaderType)
+    {
+        case 0:
+            color = DLightColor(dLight, fragmentNormal, fragmentPosition)
+                  + PLightColor(pLight, fragmentNormal, fragmentPosition)
+                  + SLightColor(sLight, fragmentNormal, fragmentPosition);
+            break;
+        case 1:
+            color = DLightColor(dLight, fragmentNormal, fragmentFlatPosition)
+                  + PLightColor(pLight, fragmentNormal, fragmentFlatPosition)
+                  + SLightColor(sLight, fragmentNormal, fragmentFlatPosition);
+            break;
+        case 2:
+            color = DLightColor(dLight, fragmentNormal, fragmentPosition)
+                  + PLightColor(pLight, fragmentNormal, fragmentPosition)
+                  + SLightColor(sLight, fragmentNormal, fragmentPosition);
+            color = floor(color*3)/3.0;
 
-    color = DLightColor(dLight, fragmentNormal, fragmentPosition)
-          + PLightColor(pLight, fragmentNormal, fragmentPosition)
-          + SLightColor(sLight, fragmentNormal, fragmentPosition);
+            vec3 normal = normalize(fragmentNormal);
+            color = floor(dot(normal,normalize(vec3(1.0,2.0,2.0)))*3)/3.0*vec3(1.0,0.6,0.7); // Apply gamma correction 
+        default:
+            color = vec3(0.4,0.5,0.6);
+            break;
 
+    }
     // Toon Shading
     // vec3 normal = normalize(fragmentNormal);
     // color = floor(dot(normal,normalize(vec3(1.0,2.0,2.0)))*3)/3.0*vec3(1.0,0.6,0.7); // Apply gamma correction 
 
     // color = floor(color*3)/3.0;
-
-    // Gouraud shading
-    // color = fragmentColor;
 
 }
 
@@ -96,59 +107,41 @@ vec3 MonoColor(vec3 c)
     return c;
 }
 
+vec3 BlinnPhong(vec3 l, vec3 p, vec3 n, Illumination i, Material m)
+{
+    vec3 tolight = normalize(-l);
+    vec3 toV = -normalize(vec3(p));
+    vec3 h = normalize(toV + tolight);
+    vec3 normal = normalize(n);
+
+    float diff = max(0.0, dot(normal, tolight));
+    float spec = pow(max(0.0, dot(h, normal)), m.shiness); // material shiness = 64.0
+
+    vec3 ambient = i.ambient * m.ambient; // material ambient
+    vec3 diffuse = i.diffuse * m.diffuse * diff; // material diffuse
+    vec3 specular = i.specular * m.specular * spec; // material specular
+    return (ambient + diffuse + specular);
+}
+
 vec3 DLightColor(DirectionalLight light, vec3 normal, vec3 fpos)
 {
-    vec3 tolight = normalize(-light.direction);
-    vec3 toV = -normalize(vec3(fpos));
-    vec3 h = normalize(toV + tolight);
-    vec3 _normal = normalize(normal);
-    
-    float spec = pow(max(0.0, dot(h, _normal)), 64.0); // material shiness = 64.0
-    float diff = max(0.0, dot(_normal, tolight));
-
-    vec3 ambient = light.ambient *  vec3(0.0, 0.0, 0.0); // material ambient
-    vec3 diffuse = light.diffuse *  diff * fragmentColor; // material diffuse
-    vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
-
-    vec3 intensity = (ambient + diffuse + specular);
+    vec3 intensity = BlinnPhong(light.direction, fpos, normal, light.illumination, material);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
  }
 vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
 {
-    vec3 tolight = normalize(light.position - fpos);
-    vec3 toV = -normalize(vec3(fpos));
-    vec3 h = normalize(toV + tolight);
-    vec3 _normal = normalize(normal);
-    
-    float spec = pow(max(0.0, dot(h, _normal)), 64.0); // material shiness = 64.0
-    float diff = max(0.0, dot(_normal, tolight));
-
     float d = length(light.position - fpos);
-    float attenuation = 1.0f/dot(light.coefficient,vec3(1.0f,d,d*d)); // 1/(c0 + c1*d + c2*d^2)
-    vec3 ambient = light.ambient *  vec3(0.0, 0.0, 0.0); // material ambient
-    vec3 diffuse = light.diffuse *  diff * fragmentColor; // material diffuse
-    vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
+    float attenuation = 1.0f/dot(light.coefficient,vec3(1.0f,d,d*d));
 
-    vec3 intensity = attenuation * (ambient + diffuse + specular);
+    vec3 intensity = attenuation * BlinnPhong(fpos - light.position, fpos, normal, light.illumination, material);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
  }
 vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos)
 {
-    vec3 tolight = normalize(light.position - fpos);
-    vec3 toV = -normalize(vec3(fpos));
-    vec3 h = normalize(toV + tolight);
-    vec3 _normal = normalize(normal);
-    
-    float spec = pow(max(0.0, dot(h, _normal)), 64.0); // material shiness = 64.0
-    float diff = max(0.0, dot(_normal, tolight));
-
-    vec3 ambient = light.ambient *  vec3(0.0, 0.0, 0.0); // material ambient
-    vec3 diffuse = light.diffuse *  diff * fragmentColor; // material diffuse
-    vec3 specular = light.specular *  spec * vec3(0.6, 0.6, 0.6); // material specular
-
-    float theta = dot(tolight, normalize(-light.direction)); 
+    float theta = dot(normalize(-light.direction), normalize(-light.direction)); 
     float epsilon = light.radius_inner - light.radius_outer;
+    float falloff = clamp((theta - light.radius_outer) / epsilon, 0.0, 1.0);
 
-    vec3 intensity = (ambient + diffuse + specular) * clamp((theta - light.radius_outer) / epsilon, 0.0, 1.0);
+    vec3 intensity = falloff * BlinnPhong(light.direction, fpos, normal, light.illumination, material);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
- }
+}
