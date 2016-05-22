@@ -108,7 +108,7 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
 	this->OffsetFrame = &WORLD_FRAME;
-	this->shader_type = LAST;
+	this->shader_type = PHONG;
 
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);

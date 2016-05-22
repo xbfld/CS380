@@ -42,9 +42,14 @@ glm::mat4 skyRBT;
 glm::mat4 eyeRBT;
 const glm::mat4 worldRBT = glm::mat4(1.0f);
 glm::mat4 objectOffsetFrame = glm::scale(11.0f, 11.0f, 11.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(0.03f, -0.08f, 0.0f));
-glm::mat4 objectRBT = glm::mat4(1.0f);
-std::vector<glm::mat4> objectRBTs = std::vector<glm::mat4>();
-std::vector<SHADER_TYPE> objectShaderTypes = std::vector<SHADER_TYPE>();
+glm::mat4 objectCenterRBT = glm::mat4(1.0f);
+struct SUB_OBJECT_INFO
+{
+	glm::mat4 RBT;
+	Material material;
+	SHADER_TYPE type;
+};
+std::vector <SUB_OBJECT_INFO> subObjects = std::vector<SUB_OBJECT_INFO>();
 glm::mat4 arcballRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
 
@@ -112,6 +117,8 @@ const vec3 WHITE(1.0f, 1.0f, 1.0f);
 const Material MATERIAL_PLASTIC_GREEN{ glm::vec3(0.0f), glm::vec3(0.1f,0.35f,0.1f), glm::vec3(0.45f, 0.55f, 0.45f), 32.0 };
 const Material MATERIAL_BRONZE{ glm::vec3(0.2125f,0.1275f,0.054f), glm::vec3(0.714f,0.4284f,0.18144f), glm::vec3(0.393548f, 0.271906f, 0.166721f), 25.6 };
 const Material MATERIAL_COPPER{ glm::vec3(0.19125,0.0735,0.0225), glm::vec3(0.7038,0.27048,0.0828), glm::vec3(0.256777, 0.137622, 0.086014), 12.8 };
+const Material MATERIAL_RUBBER_BLACK{ glm::vec3(0.02), glm::vec3(0.01), glm::vec3(0.4), 10 };
+const Material MATERIAL_JADE{ glm::vec3(0.135, 0.2225, 0.1575), glm::vec3(0.54,0.89,0.63), glm::vec3(0.316228,0.316228,0.316228), 12.8};
 
 //const vec3 RED(0.0f, 0.0f, 0.0f);
 //const vec3 GREEN(0.0f, 0.0f, 0.0f);
@@ -181,7 +188,7 @@ void setWrtFrame()
 		aFrame = (sky_type == 0) ? linearFact(skyRBT) : skyRBT;
 		break;
 	case 1:
-		aFrame = transFact(objectRBT) * linearFact(eyeRBT);
+		aFrame = transFact(objectCenterRBT) * linearFact(eyeRBT);
 		break;
 	}
 }
@@ -250,7 +257,14 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		// Apply transformation with auxiliary frame
 		setWrtFrame();
 		if (object_index == 0) { skyRBT = aFrame * m * glm::inverse(aFrame) * skyRBT; }
-		else { objectRBT = aFrame * m * glm::inverse(aFrame) * objectRBT; }
+		else
+		{
+			objectCenterRBT = aFrame * m * glm::inverse(aFrame) * objectCenterRBT;
+			for (size_t i = 0; i < subObjects.size(); i++)
+			{
+				subObjects[i].RBT = aFrame * m * glm::inverse(aFrame) * subObjects[i].RBT;
+			}
+		}
 
 		prev_x = (float)xpos; prev_y = (float)ypos;
 	}
@@ -432,11 +446,51 @@ int main(void)
 	object.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	object.set_projection(&Projection);
 	object.set_eye(&eyeRBT);
-	object.set_model(&objectRBT);
+	object.set_model(&objectCenterRBT);
 	object.set_offset(&objectOffsetFrame);
 	object.set_material(MATERIAL_COPPER);
 	//object.set_material(MATERIAL_BRONZE);
 	object.set_shader_type(SHADER_TYPE::FLAT);
+
+	SUB_OBJECT_INFO soi;
+	for (size_t i = 0; i < 3; i++)
+	{
+		for (size_t j = 0; j < 3; j++)
+		{
+			soi.RBT = glm::translate(objectCenterRBT,1.5f * (vec3(-1.0f,-1.0f,0.0f)+vec3(1.0f)*vec3(i,j,0)));
+			switch (i)
+			{
+			case 0:
+				soi.material = MATERIAL_COPPER;
+				break;
+			case 1:
+				soi.material = MATERIAL_RUBBER_BLACK;
+				break;
+			case 2:
+				soi.material = MATERIAL_JADE;
+				break;
+			default:
+				soi.material = MATERIAL_PLASTIC_GREEN;
+				break;
+			}
+			switch ((i+j)%3)
+			{
+			case 0:
+				soi.type = SHADER_TYPE::PHONG;
+				break;
+			case 1:
+				soi.type = SHADER_TYPE::FLAT;
+				break;
+			case 2:
+				soi.type = SHADER_TYPE::TOON;
+				break;
+			default:
+				soi.type = SHADER_TYPE::LAST;
+				break;
+			}
+			subObjects.push_back(soi);
+		}
+	}
 
 	arcBall = Model();
 	init_sphere(arcBall);
@@ -450,7 +504,7 @@ int main(void)
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		eyeRBT = (view_index == 0) ? skyRBT : objectRBT;
+		eyeRBT = (view_index == 0) ? skyRBT : objectCenterRBT;
 
 		//TODO: pass the light value to the shader
 
@@ -473,7 +527,7 @@ int main(void)
 			arcballRBT = (sky_type == 0) ? worldRBT : skyRBT;
 			break;
 		case 1:
-			arcballRBT = objectRBT;
+			arcballRBT = objectCenterRBT;
 			break;
 		default:
 			break;
@@ -493,6 +547,13 @@ int main(void)
 
 		ground.draw();
 		object.draw();
+		for (size_t i = 0; i < subObjects.size(); i++)
+		{
+			object.set_model(&subObjects[i].RBT);
+			object.set_material(subObjects[i].material);
+			object.set_shader_type(subObjects[i].type);
+			object.draw();
+		}
 		// Swap buffers (Double buffering)
 		glfwSwapBuffers(window);
 		glfwPollEvents();
