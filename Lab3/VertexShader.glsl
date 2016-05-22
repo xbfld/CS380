@@ -42,7 +42,7 @@ void main(){
     mat4 NVM = transpose(invm);
     vec4 tnormal = vec4(vertexNormal_modelspace, 0.0);
     fragmentNormal = vec3(NVM * tnormal);
-    fragmentFlatNormal = fragmentNormal;
+    fragmentFlatNormal = vec3(NVM * tnormal);
     
     // Gouraud shading
     // vec3 tolight = normalize(uLight - fragmentPosition);

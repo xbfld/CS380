@@ -77,9 +77,9 @@ void main(){
                   + SLightColor(sLight, fragmentNormal, fragmentPosition);
             break;
         case 1:
-            color = DLightColor(dLight, fragmentNormal, fragmentFlatPosition)
-                  + PLightColor(pLight, fragmentNormal, fragmentFlatPosition)
-                  + SLightColor(sLight, fragmentNormal, fragmentFlatPosition);
+            color = DLightColor(dLight, fragmentFlatNormal, fragmentFlatPosition)
+                  + PLightColor(pLight, fragmentFlatNormal, fragmentFlatPosition)
+                  + SLightColor(sLight, fragmentFlatNormal, fragmentFlatPosition);
             break;
         case 2:
             color = DLightColor(dLight, fragmentNormal, fragmentPosition)
@@ -100,10 +100,6 @@ void main(){
     // color = floor(dot(normal,normalize(vec3(1.0,2.0,2.0)))*3)/3.0*vec3(1.0,0.6,0.7); // Apply gamma correction 
 
     // color = floor(color*3)/3.0;
-
-            color = DLightColor(dLight, fragmentNormal, fragmentPosition)
-                  + PLightColor(pLight, fragmentNormal, fragmentPosition)
-                  + SLightColor(sLight, fragmentNormal, fragmentPosition);
 }
 
 vec3 MonoColor(vec3 c)

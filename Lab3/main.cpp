@@ -41,8 +41,10 @@ Model ground, object;
 glm::mat4 skyRBT;
 glm::mat4 eyeRBT;
 const glm::mat4 worldRBT = glm::mat4(1.0f);
-glm::mat4 objectOffsetFrame = glm::scale(9.0f, 9.0f, 9.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(0.03f, -0.08f, 0.0f));
+glm::mat4 objectOffsetFrame = glm::scale(11.0f, 11.0f, 11.0f) * glm::rotate(glm::mat4(1.0f), 10.0f, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(0.03f, -0.08f, 0.0f));
 glm::mat4 objectRBT = glm::mat4(1.0f);
+std::vector<glm::mat4> objectRBTs = std::vector<glm::mat4>();
+std::vector<SHADER_TYPE> objectShaderTypes = std::vector<SHADER_TYPE>();
 glm::mat4 arcballRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
 
@@ -424,6 +426,8 @@ int main(void)
 
 	//TODO: Initialize model by loading .obj file
 	object = Model();
+	//init_cube(object, vec3(1.0f));
+	//init_sphere(object);
 	init_obj(object, "bunny.obj", glm::vec3(1.0, 1.0, 1.0));
 	object.initialize(DRAW_TYPE::ARRAY, "VertexShader.glsl", "FragmentShader.glsl");
 	object.set_projection(&Projection);
@@ -432,6 +436,7 @@ int main(void)
 	object.set_offset(&objectOffsetFrame);
 	object.set_material(MATERIAL_COPPER);
 	//object.set_material(MATERIAL_BRONZE);
+	object.set_shader_type(SHADER_TYPE::FLAT);
 
 	arcBall = Model();
 	init_sphere(arcBall);
