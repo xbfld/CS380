@@ -135,7 +135,7 @@ vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
  }
 vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos)
 {
-    float theta = dot(normalize(-light.direction), normalize(-light.direction)); 
+    float theta = dot(normalize(light.position - fpos), normalize(-light.direction)); 
     float epsilon = light.radius_inner - light.radius_outer;
     float falloff = clamp((theta - light.radius_outer) / epsilon, 0.0, 1.0);
 
