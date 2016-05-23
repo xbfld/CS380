@@ -68,6 +68,10 @@ float arcBallScreenRadius = 0.25f * min(windowWidth, windowHeight);
 float arcBallScale = 0.01f; float ScreenToEyeScale = 0.01f;
 float prev_x = 0.0f; float prev_y = 0.0f;
 
+double cTime;
+double dTime;
+double lTime;
+
 struct DirectionalLight
 {
 	vec3 direction;
@@ -111,22 +115,26 @@ struct SpotLight
 const vec3 RED(1.0f, 0.0f, 0.0f);
 const vec3 GREEN(0.0f, 1.0f, 0.0f);
 const vec3 BLUE(0.0f, 0.0f, 1.0f);
+const vec3 CYAN(0.0f, 1.0f, 1.0f);
+const vec3 MAGENTA(1.0f, 0.0f, 1.0f);
+const vec3 YELLOW(1.0f, 1.0f, 0.0f);
 const vec3 BLACK(0.0f, 0.0f, 0.0f);
 const vec3 WHITE(1.0f, 1.0f, 1.0f);
+const vec3 COLORS[8]{ WHITE, RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW };
 
 const Material MATERIAL_PLASTIC_GREEN{ glm::vec3(0.0f), glm::vec3(0.1f,0.35f,0.1f), glm::vec3(0.45f, 0.55f, 0.45f), 32.0 };
 const Material MATERIAL_BRONZE{ glm::vec3(0.2125f,0.1275f,0.054f), glm::vec3(0.714f,0.4284f,0.18144f), glm::vec3(0.393548f, 0.271906f, 0.166721f), 25.6 };
 const Material MATERIAL_COPPER{ glm::vec3(0.19125,0.0735,0.0225), glm::vec3(0.7038,0.27048,0.0828), glm::vec3(0.256777, 0.137622, 0.086014), 12.8 };
 const Material MATERIAL_RUBBER_BLACK{ glm::vec3(0.02), glm::vec3(0.01), glm::vec3(0.4), 10 };
-const Material MATERIAL_JADE{ glm::vec3(0.135, 0.2225, 0.1575), glm::vec3(0.54,0.89,0.63), glm::vec3(0.316228,0.316228,0.316228), 12.8};
-
-//const vec3 RED(0.0f, 0.0f, 0.0f);
-//const vec3 GREEN(0.0f, 0.0f, 0.0f);
-//const vec3 BLUE(0.0f, 0.0f, 0.0f);
+const Material MATERIAL_JADE{ glm::vec3(0.135, 0.2225, 0.1575), glm::vec3(0.54,0.89,0.63), glm::vec3(0.316228,0.316228,0.316228), 12.8 };
+// Reflection property for common materials (http://www.real3dtutorials.com/tut00008.php)
 
 DirectionalLight dLight{ vec3(0.0f,-1.0f,0.0f), WHITE*0.005f,WHITE, WHITE };
-PointLight pLight{ vec3(2.0f), vec3(1.0f, 0.0f, 0.05f), BLACK, BLACK, BLACK };
-SpotLight sLight{ vec3(0.0f,2.0f,0.0f), vec3(0.0f,-1.0f,0.0f), 0.8f, 0.75f, BLACK, BLACK, BLACK };
+PointLight pLight{ vec3(2.0f), vec3(1.0f, 0.0f, 0.02f), WHITE*0.005f,WHITE, WHITE };
+SpotLight sLight{ vec3(0.0f,3.0f,0.0f), vec3(0.0f,-1.0f,0.0f), 0.8f, 0.7f, WHITE*0.005f,WHITE, WHITE };
+
+int d_color_index(0), p_color_index(0), s_color_index(0);
+static void cycle_color(int &c) { c = (7 <= c) ? 0 : c + 1; }
 
 static bool non_ego_cube_manipulation()
 {
@@ -317,7 +325,7 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 		switch (key)
 		{
 		case GLFW_KEY_H:
-			std::cout << "CS380 Homework Assignment 2" << std::endl;
+			std::cout << "CS380 Homework Assignment 4" << std::endl;
 			std::cout << "keymaps:" << std::endl;
 			std::cout << "h\t\t Help command" << std::endl;
 			std::cout << "v\t\t Change eye matrix" << std::endl;
@@ -332,6 +340,15 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 			break;
 		case GLFW_KEY_M:
 			cycleSkyAMatrix();
+			break;
+		case GLFW_KEY_1:
+			cycle_color(d_color_index);
+			break;
+		case GLFW_KEY_2:
+			cycle_color(p_color_index);
+			break;
+		case GLFW_KEY_3:
+			cycle_color(s_color_index);
 			break;
 		default:
 			break;
@@ -387,7 +404,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Lab 3", NULL, NULL);
+	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Lab 4: 20130156 - 김준", NULL, NULL);
 	if (window == NULL) {
 		glfwTerminate();
 		return -1;
@@ -437,6 +454,8 @@ int main(void)
 	ground.set_eye(&eyeRBT);
 	glm::mat4 groundRBT = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, g_groundY, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_groundSize, 1.0f, g_groundSize));
 	ground.set_model(&groundRBT);
+	ground.set_material(MATERIAL_PLASTIC_GREEN);
+	object.set_shader_type(SHADER_TYPE::PHONG);
 
 	//TODO: Initialize model by loading .obj file
 	object = Model();
@@ -457,7 +476,7 @@ int main(void)
 	{
 		for (size_t j = 0; j < 3; j++)
 		{
-			soi.RBT = glm::translate(objectCenterRBT,1.5f * (vec3(-1.0f,-1.0f,0.0f)+vec3(1.0f)*vec3(i,j,0)));
+			soi.RBT = glm::translate(objectCenterRBT, 1.5f * (vec3(-1.0f, -1.0f, 0.0f) + vec3(1.0f)*vec3(i, j, 0)));
 			switch (i)
 			{
 			case 0:
@@ -473,7 +492,7 @@ int main(void)
 				soi.material = MATERIAL_PLASTIC_GREEN;
 				break;
 			}
-			switch ((i+j)%3)
+			switch ((i + j) % 3)
 			{
 			case 0:
 				soi.type = SHADER_TYPE::PHONG;
@@ -500,7 +519,30 @@ int main(void)
 	arcBall.set_eye(&eyeRBT);
 	arcBall.set_model(&arcballRBT);
 
+	float anguler_v = 1.0f;
+	float r;
 	do {
+		lTime = cTime;
+		cTime = glfwGetTime();
+		dTime = cTime - lTime;
+		r = anguler_v * cTime;
+
+		dLight.ambient = 0.005f * COLORS[d_color_index];
+		dLight.diffuse = 0.4f * COLORS[d_color_index];
+		dLight.specular = 0.4f * COLORS[d_color_index];
+
+		pLight.ambient = 0.005f * COLORS[p_color_index];
+		pLight.diffuse = 0.4f * COLORS[p_color_index];
+		pLight.specular = 0.4f * COLORS[p_color_index];
+
+		sLight.ambient = 0.005f * COLORS[s_color_index];
+		sLight.diffuse = 0.4f * COLORS[s_color_index];
+		sLight.specular = 0.4f * COLORS[s_color_index];
+
+		pLight.position = vec3(3.0f,1.0f,3.0f) * vec3(cos(r*0.7), cos(r*1.1), cos(r*1.3));
+		sLight.position = vec3(sin(r*1.15), sin(r*1.35), sin(r*0.8))+vec3(0.0f,3.0f,0.0f);
+		//std::cout << sLight.position.x << sLight.position.y << sLight.position.z << std::endl;
+
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -546,7 +588,6 @@ int main(void)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		ground.draw();
-		object.draw();
 		for (size_t i = 0; i < subObjects.size(); i++)
 		{
 			object.set_model(&subObjects[i].RBT);
