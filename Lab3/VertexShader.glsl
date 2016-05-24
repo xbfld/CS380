@@ -27,6 +27,7 @@ void main(){
     mat4 MVM = inverse(Eye) * ModelTransform * OffsetFrame ;
 
     vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
+    // wPosition.xyz = floor(wPosition.xyz*10.0)/10.0; // Pixelizer
     fragmentPosition = wPosition.xyz;
     fragmentFlatPosition = wPosition.xyz;
     gl_Position = Projection * wPosition;

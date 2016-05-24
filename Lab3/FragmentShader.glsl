@@ -124,7 +124,7 @@ vec3 DLightColor(DirectionalLight light, vec3 normal, vec3 fpos)
 {
     vec3 intensity = BlinnPhong(light.direction, fpos, normal, light.illumination, material);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
- }
+}
 vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
 {
     float d = length(light.position - fpos);
@@ -132,7 +132,7 @@ vec3 PLightColor(PointLight light, vec3 normal, vec3 fpos)
 
     vec3 intensity = attenuation * BlinnPhong(fpos - light.position, fpos, normal, light.illumination, material);
     return pow(intensity, vec3(1.0 / 2.2)); // Apply gamma correction 
- }
+}
 vec3 SLightColor(SpotLight light, vec3 normal, vec3 fpos)
 {
     float theta = dot(normalize(light.position - fpos), normalize(-light.direction)); 
