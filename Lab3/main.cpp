@@ -539,6 +539,9 @@ int main(void)
 		sLight.diffuse = 0.4f * COLORS[s_color_index];
 		sLight.specular = 0.4f * COLORS[s_color_index];
 
+		dLight.direction = vec3(cos(r*0.95), -3.0, sin(r*1.05));
+		sLight.direction = vec3(-sin(r*1.2), -3.0, cos(r*0.85));
+
 		pLight.position = vec3(3.0f,1.0f,3.0f) * vec3(cos(r*0.7), cos(r*1.1), cos(r*1.3));
 		sLight.position = vec3(sin(r*1.15), sin(r*1.35), sin(r*0.8))+vec3(0.0f,3.0f,0.0f);
 		//std::cout << sLight.position.x << sLight.position.y << sLight.position.z << std::endl;
