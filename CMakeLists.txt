@@ -65,23 +65,30 @@ target_link_libraries(SkeletonProject
 set_target_properties(SkeletonProject PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Skeleton/")
 create_target_launcher(SkeletonProject WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Skeleton/")
 
-add_executable(Lab3
-	Lab3/main.cpp
-	Lab3/VertexShader.glsl
-	Lab3/FragmentShader.glsl
+# Lab4
+add_executable(Lab4
+	Lab4/main.cpp
+	Lab4/VertexShader.glsl
+	Lab4/FragmentShader.glsl
+	Lab4/BumpVertexShader.glsl
+	Lab4/BumpFragmentShader.glsl
+	Lab4/EnvVertexShader.glsl
+	Lab4/EnvFragmentShader.glsl
 	common/shader.cpp
 	common/shader.hpp
 	common/model.cpp
 	common/model.hpp
+	common/texture.cpp
+	common/texture.hpp
 	common/geometry.hpp
 	common/affine.hpp	
 	common/arcball.hpp
 )
 
-target_link_libraries(Lab3
+target_link_libraries(Lab4
   ${ALL_LIBS}
 )
 
 # Xcode and Visual Studio working directories
-set_target_properties(Lab3 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Lab3/")
-create_target_launcher(Lab3 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Lab3/")
+set_target_properties(Lab4 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Lab4/")
+create_target_launcher(Lab4 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Lab4/")
