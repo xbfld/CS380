@@ -33,6 +33,18 @@ void main(){
 	gl_Position = Projection * wPosition;	
 
 	//TODO: Calculate Reflection Dir for Environmental map
-	
+	mat4 inverseProjection = inverse(Projection);
+	mat3 inverseModelview = mat3(inverse(MVM));
+	if (DrawSkyBox){
+		ReflectDir = -vertexPosition_modelspace;
+	}
+	else{
+	   vec3 worldPos = vec3(ModelTransform * vec4(vertexPosition_modelspace, 1.0));
+	   vec3 worldNorm = vec3(ModelTransform * vec4(vertexNormal_modelspace, 0.0));
+	   vec3 campos = (Eye*vec4(WorldCameraPosition, 1.0)).xyz;
+	   vec3 worldView = normalize(campos - worldPos);
+
+	   ReflectDir = -reflect(-worldView, worldNorm);
+	}
 }
 

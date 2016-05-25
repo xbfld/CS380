@@ -23,7 +23,8 @@ void main(){
 	
 	vec3 Kd = vec3(1.0, 1.0, 0.0);
 	//TODO: Change material color to texture color		
-	
+	Kd = texture(myTextureSampler, UV).rgb;
+
 	vec3 intensity = Kd * diffuse + vec3(0.3, 0.3, 0.3)*specular;
 		
 	vec3 finalColor = intensity;

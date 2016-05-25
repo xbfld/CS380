@@ -25,5 +25,11 @@ void main(){
 		color = vec3(0.0, 0.7, 0.7);
 	}
 	//TODO: assign color from environmental map(cubemap) texture	
-	
+	vec4 texColor = texture(cubemap, ReflectDir);
+	if(DrawSkyBox){
+	   color = texColor.xyz;
+	}else{
+	   vec4 Kd = texture(myTextureSampler, UV);
+	   color = mix(Kd, texColor, 0.85).xyz;
+	}
 }

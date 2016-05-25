@@ -26,14 +26,19 @@ void main(){
 	vec3 h = normalize(toV + tolight);
 	vec3 normal = normalize(fragmentNormal);	
 	//TODO: change lighting parameter into normal map parameters
-	
+	tolight = ulightdir;
+	toV = utovdir;
+	h = uhalf;
+
 	//TODO: change normal with loaded normal texture
-	
+	normal = texture(myBumpSampler, UV).rgb*2.0 - 1.0;
+
 	float specular = pow(max(0.0, dot(h, normal)), 64.0);
 	float diffuse = max(0.0, dot(normal, tolight));
 	vec3 Kd = vec3(1.0, 1.0, 1.0);
 	//TODO: Change material color to texture color
-	
+	Kd = texture(myTextureSampler, UV).rgb;
+
 	vec3 intensity = Kd*diffuse + vec3(0.3, 0.3, 0.3)*specular;
 
 	vec3 finalColor = intensity;

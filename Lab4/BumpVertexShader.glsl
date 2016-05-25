@@ -38,5 +38,21 @@ void main(){
 	UV = vertexUV;
 
 	//TODO: calculate light properties in tangent space
-	
+	vec3 n = vec3(NVM * tnormal);
+	vec3 t = normalize((NVM * vec4(tangents,0))).xyz;
+	vec3 b = cross(n, t);
+
+	vec3 vert_pos = wPosition.xyz;
+	vec3 lightDir = normalize(uLight - vert_pos);
+
+	vec3 v;
+	v.x = dot(lightDir, t); v.y = dot(lightDir, b); v.z = dot(lightDir, n);
+	ulightdir = normalize(v);
+
+	v.x = dot(vert_pos, t); v.y = dot(vert_pos, b); v.z = dot(vert_pos, n);
+	utovdir = normalize(v);
+
+	vec3 halfVector = normalize(vert_pos + lightDir);
+	v.x = dot(halfVector, t); v.y = dot(halfVector, b);v.z = dot(halfVector, n);
+	uhalf = v;
 }
