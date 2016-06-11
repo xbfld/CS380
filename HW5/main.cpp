@@ -109,9 +109,45 @@ void init_shader(int idx, const char * vertexShader_path, const char * fragmentS
 	addPrograms[idx] = LoadShaders(vertexShader_path, fragmentShader_path);
 	glUseProgram(addPrograms[idx]);
 }
+void init_cubemap(const char * baseFileName, int size) {
+	glActiveTexture(GL_TEXTURE0 + 3);
+	glGenTextures(1, &cubeTexID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
+	const char * suffixes[] = { "posx", "negx", "posy", "negy", "posz", "negz" };
+	GLuint targets[] = {
+		GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+	};
+	GLint w, h;
+	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, size, size);
+	for (int i = 0; i < 6; i++) {
+		std::string texName = std::string(baseFileName) + "_" + suffixes[i] + ".bmp";
+		unsigned char* data = loadBMP_cube(texName.c_str(), &w, &h);
+		glTexSubImage2D(targets[i], 0, 0, 0, w, h,
+			GL_RGB, GL_UNSIGNED_BYTE, data);
+		delete[] data;
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 3);
+}
 void init_texture(void) {
-	//TODO: Initialize your textures
+	//TODO: Initialize first texture
+	texture[0] = loadBMP_custom("Judy.bmp");
+	for (int i = 0; i < 3; i++) textureID[i][0] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
+	//TODO: Initialize second texture
+	texture[1] = loadBMP_custom("brick.bmp");
+	for (int i = 0; i < 3; i++) textureID[i][1] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
+	//TODO: Initialize bump texture
+	bumpTex = loadBMP_custom("brick_bump.bmp");
+	bumpTexID = glGetUniformLocation(addPrograms[1], "myBumpSampler");
 
+	//TODO: Initialize Cubemap texture	
+	init_cubemap("beach", 2048);
 }
 static bool non_ego_cube_manipulation()
 {
