@@ -92,3 +92,31 @@ target_link_libraries(Lab4
 # Xcode and Visual Studio working directories
 set_target_properties(Lab4 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Lab4/")
 create_target_launcher(Lab4 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Lab4/")
+
+# Homework5 Skeleton
+add_executable(HW5
+	HW5/main.cpp
+	HW5/VertexShader.glsl
+	HW5/FragmentShader.glsl
+	HW5/BumpVertexShader.glsl
+	HW5/BumpFragmentShader.glsl
+	HW5/EnvVertexShader.glsl
+	HW5/EnvFragmentShader.glsl
+	common/shader.cpp
+	common/shader.hpp
+	common/model.cpp
+	common/model.hpp
+	common/texture.cpp
+	common/texture.hpp
+	common/geometry.hpp
+	common/affine.hpp	
+	common/arcball.hpp
+)
+
+target_link_libraries(HW5
+  ${ALL_LIBS}
+)
+
+# Xcode and Visual Studio working directories
+set_target_properties(HW5 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/HW5/")
+create_target_launcher(HW5 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/HW5/")

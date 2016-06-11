@@ -32,8 +32,8 @@ GLuint lightLocCube;
 GLuint isSky, isEye;
 
 GLuint addPrograms[3];
-GLuint texture[3];
-GLuint textureID[3][3];
+GLuint texture[9];
+GLuint textureID[3][9];
 GLuint bumpTex;
 GLuint bumpTexID;
 GLuint cubeTex;
@@ -56,13 +56,15 @@ const glm::mat4 worldRBT = glm::mat4(1.0f);
 glm::mat4 arcballRBT = glm::mat4(1.0f);
 glm::mat4 aFrame;
 //cubes
-glm::mat4 objectRBT[2];
-Model cubes[2];
+glm::mat4 objectRBT[9];
+Model cubes[9];
 int program_cnt = 1;
+//cube animation
+bool rot_first_col = false;
 
 //Sky box
 Model skybox;
-glm::mat4 skyboxRBT = glm::translate(0.0f, 0.0f, 0.0f);//Will not move(cause it is the sky)
+glm::mat4 skyboxRBT = glm::translate(0.0f, 0.0f, 0.0f);//Will be fixed(cause it is the sky)
 
 vec3 eyePosition = vec3(0.0, 0.25, 6.0);
 // Mouse interaction
@@ -88,11 +90,18 @@ GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 GL_TEXTURE_CUBE_MAP_NEGATIVE_Z };
 
 void init_cubeRBT() {
-	objectRBT[0] = glm::scale(1.2f, 1.2f, 1.2f) * glm::translate(-1.0f, 0.0f, .0f);
-	objectRBT[1] = glm::scale(1.2f, 1.2f, 1.2f) * glm::translate(1.0f, 0.0f, .0f);
+	objectRBT[0] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, 1.2f, .0f);
+	objectRBT[1] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, 1.2f, .0f);
+	objectRBT[2] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, 1.2f, .0f);
+	objectRBT[3] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, 0.0f, .0f);
+	objectRBT[4] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, 0.0f, .0f);//Center
+	objectRBT[5] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, 0.0f, .0f);
+	objectRBT[6] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, -1.2f, .0f);
+	objectRBT[7] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, -1.2f, .0f);
+	objectRBT[8] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, -1.2f, .0f);
 }
 void set_program(int p) {
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 9; i++) {
 		cubes[i].GLSLProgramID = addPrograms[p];
 	}
 }
@@ -100,45 +109,9 @@ void init_shader(int idx, const char * vertexShader_path, const char * fragmentS
 	addPrograms[idx] = LoadShaders(vertexShader_path, fragmentShader_path);
 	glUseProgram(addPrograms[idx]);
 }
-void init_cubemap(const char * baseFileName, int size) {
-	glActiveTexture(GL_TEXTURE0 + 3);
-	glGenTextures(1, &cubeTexID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
-	const char * suffixes[] = { "posx", "negx", "posy", "negy", "posz", "negz" };
-	GLuint targets[] = {
-		GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-	};
-	GLint w, h;
-	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, size, size);
-	for (int i = 0; i < 6; i++) {
-		std::string texName = std::string(baseFileName) + "_" + suffixes[i] + ".bmp";
-		unsigned char* data = loadBMP_cube(texName.c_str(), &w, &h);
-		glTexSubImage2D(targets[i], 0, 0, 0, w, h,
-			GL_RGB, GL_UNSIGNED_BYTE, data);
-		delete[] data;
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 3);
-}
 void init_texture(void) {
-	//TODO: Initialize first texture
-	texture[0] = loadBMP_custom("Judy.bmp");
-	for (int i = 0; i < 3; i++) textureID[i][0] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
-	//TODO: Initialize second texture
-	texture[1] = loadBMP_custom("brick.bmp");
-	for (int i = 0; i < 3; i++) textureID[i][1] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
-	//TODO: Initialize bump texture
-	bumpTex = loadBMP_custom("brick_bump.bmp");
-	bumpTexID = glGetUniformLocation(addPrograms[1], "myBumpSampler");
+	//TODO: Initialize your textures
 
-	//TODO: Initialize Cubemap texture	
-	init_cubemap("beach", 2048);
 }
 static bool non_ego_cube_manipulation()
 {
@@ -234,8 +207,8 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		{
 			// 1. Get eye coordinate of arcball and compute its screen coordinate
 			glm::vec4 arcball_eyecoord = glm::inverse(eyeRBT) * arcballRBT * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			glm::vec3 arcball_eyecoord3 = glm::vec3(arcball_eyecoord);
-			glm::vec2 arcballCenter = eye_to_screen(arcball_eyecoord3,
+			glm::vec2 arcballCenter = eye_to_screen(
+				glm::vec3(arcball_eyecoord),
 				Projection,
 				frameBufferWidth,
 				frameBufferHeight
@@ -245,8 +218,8 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 			glm::vec2 p1 = glm::vec2(prev_x, prev_y) - arcballCenter;
 			glm::vec2 p2 = glm::vec2(xpos, ypos) - arcballCenter;
 
-			glm::vec3 v1 = glm::normalize(glm::vec3(p1.x, p1.y, sqrt(max(0.0f, pow(arcBallScreenRadius, 2.0f) - pow(p1.x, 2.0f) - pow(p1.y, 2.0f)))));
-			glm::vec3 v2 = glm::normalize(glm::vec3(p2.x, p2.y, sqrt(max(0.0f, pow(arcBallScreenRadius, 2.0f) - pow(p2.x, 2.0f) - pow(p2.y, 2.0f)))));
+			glm::vec3 v1 = glm::normalize(glm::vec3(p1.x, p1.y, sqrt(max(0.0f, pow(arcBallScreenRadius, 2) - pow(p1.x, 2) - pow(p1.y, 2)))));
+			glm::vec3 v2 = glm::normalize(glm::vec3(p2.x, p2.y, sqrt(max(0.0f, pow(arcBallScreenRadius, 2) - pow(p2.x, 2) - pow(p2.y, 2)))));
 
 			glm::quat w1, w2;
 			// 2. Compute arcball rotation (Chatper 8)
@@ -331,6 +304,11 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 				program_cnt = 0;
 			set_program(program_cnt);
 			break;
+		case GLFW_KEY_Q://lotate first column
+			if (!rot_first_col) {
+				rot_first_col = true;
+			}
+			break;
 		default:
 			break;
 		}
@@ -352,7 +330,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Lab4", NULL, NULL);
+	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Homework5", NULL, NULL);
 	if (window == NULL) {
 		glfwTerminate();
 		return -1;
@@ -395,7 +373,7 @@ int main(void)
 	init_shader(1, "BumpVertexShader.glsl", "BumpFragmentShader.glsl");
 	init_shader(2, "EnvVertexShader.glsl", "EnvFragmentShader.glsl");
 
-	//Initialize cube models
+	//TODO: Initialize cube model by calling textured cube model
 	init_cubeRBT();
 	cubes[0] = Model();
 	init_texture_cube(cubes[0]);
@@ -404,15 +382,15 @@ int main(void)
 	cubes[0].set_projection(&Projection);
 	cubes[0].set_eye(&eyeRBT);
 	cubes[0].set_model(&objectRBT[0]);
+	for (int i = 1; i < 9; i++) {
+		cubes[i] = Model();
+		cubes[i].initialize(DRAW_TYPE::ARRAY, cubes[0]);
 
-	cubes[1] = Model();
-	cubes[1].initialize(DRAW_TYPE::ARRAY, cubes[0]);
+		cubes[i].set_projection(&Projection);
+		cubes[i].set_eye(&eyeRBT);
+		cubes[i].set_model(&objectRBT[i]);
+	}
 
-	cubes[1].set_projection(&Projection);
-	cubes[1].set_eye(&eyeRBT);
-	cubes[1].set_model(&objectRBT[1]);
-
-	//Initilize skyBox
 	skybox = Model();
 	init_skybox(skybox);
 	skybox.initialize(DRAW_TYPE::ARRAY, addPrograms[2]);
@@ -420,7 +398,7 @@ int main(void)
 	skybox.set_eye(&eyeRBT);
 	skybox.set_model(&skyboxRBT);
 
-	////////////////////////////////////
+
 	arcBall = Model();
 	init_sphere(arcBall);
 	arcBall.initialize(DRAW_TYPE::INDEX, cubes[0].GLSLProgramID);
@@ -433,18 +411,42 @@ int main(void)
 	init_texture();
 
 	mat4 oO[9];
-	for (int i = 0; i < 9; i++) oO[i] = objectRBT[i];
+	for (int i = 0;i < 9;i++) oO[i] = objectRBT[i];
 	float angle = 0.0f;
 	double pre_time = glfwGetTime();
-
 	program_cnt = 0;
 	set_program(0);
+
+	//first column rotation
+	int ani_count = 0;
+	float ani_angle = 0.0f;
+	mat4 curRBT[9];
+	for (int i = 0; i < 9; i++) curRBT[i] = objectRBT[i];
+
 	do {
 		double cur_time = glfwGetTime();
 		// Clear the screen
 		if (cur_time - pre_time > 0.008) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			eyeRBT = (view_index == 0) ? skyRBT : objectRBT[0];
+
+			//cube rotation
+			if (rot_first_col) {
+				ani_angle += 0.3f;
+				objectRBT[0] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[0];
+				objectRBT[3] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[3];
+				objectRBT[6] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[6];
+
+				ani_count++;
+				if (ani_count > 59) {
+					curRBT[0] = objectRBT[0];
+					curRBT[3] = objectRBT[3];
+					curRBT[6] = objectRBT[6];
+					rot_first_col = false;
+					ani_angle = 0.0f;
+					ani_count = 0;
+				}
+			}
 
 			glm::vec3 lightVec = glm::vec3(sin(angle), 0.0f, cos(angle));
 			glm::vec4 pLightPos = inverse(eyeRBT) * vec4(0.0f, 2.0f * cos(angle), 2.0f * sin(angle), 1.0f);
@@ -457,62 +459,30 @@ int main(void)
 				angle += 0.02f;
 			if (angle > 360.0f) angle -= 360.0f;
 
-			if (program_cnt == 2) {
-				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
-				glUniform1i(isSky, 0);
-				//TODO: pass the cubemap texture to shader
-				glActiveTexture(GL_TEXTURE0 + 3);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
-				glUniform1i(cubeTex, 3);
-
-			}
-			//TODO: pass the first texture value to shader			
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, texture[0]);
-			glUniform1i(textureID[program_cnt][0], 0);
-
-			//draw first cube models
+			//TODO: draw OBJ models		
+			//TODO: pass the light value (uniform variables) to shader
+			//TODO: pass the texture value to shader
 			glUseProgram(cubes[0].GLSLProgramID);
 			lightLocCube = glGetUniformLocation(cubes[0].GLSLProgramID, "uLight");
 			glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
 			cubes[0].draw();
-
-			//TODO: pass bump(normalmap) texture value to shader
-			if (program_cnt == 1) {
-				glActiveTexture(GL_TEXTURE0 + 2);
-				glBindTexture(GL_TEXTURE_2D, bumpTex);
-				glUniform1i(bumpTexID, 2);
+			for (int i = 1; i < 9; i++) {
+				glUseProgram(cubes[i].GLSLProgramID);
+				lightLocCube = glGetUniformLocation(cubes[i].GLSLProgramID, "uLight");
+				glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
+				cubes[i].draw2(cubes[0]);
 			}
-
-			//TODO: pass second texture value to shader						
-			glActiveTexture(GL_TEXTURE0 + 1);
-			glBindTexture(GL_TEXTURE_2D, texture[1]);
-			glUniform1i(textureID[program_cnt][1], 1);
-
-			//draw second cube models
-			glUseProgram(cubes[1].GLSLProgramID);
-			lightLocCube = glGetUniformLocation(cubes[1].GLSLProgramID, "uLight");
-			glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
-			cubes[1].draw2(cubes[0]);
-
 			if (program_cnt == 2) {
-				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
-				glUniform1i(isSky, 1);
-
-				//TODO: Pass the texture(cubemap value to shader) and eye position
 				glUseProgram(addPrograms[2]);
 				isEye = glGetUniformLocation(addPrograms[2], "WorldCameraPosition");
 				glUniform3f(isEye, eyePosition.x, eyePosition.y, eyePosition.z);
-				cubeTex = glGetUniformLocation(addPrograms[2], "cubemap");
-				glActiveTexture(GL_TEXTURE0 + 3);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
-				glUniform1i(cubeTex, 3);
-
+				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
+				glUniform1i(isSky, 1);
 				glDepthMask(GL_FALSE);
 				skybox.draw();
 				glDepthMask(GL_TRUE);
+				glUniform1i(isSky, 0);
 			}
-
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			switch (object_index)
 			{
@@ -544,7 +514,7 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Clean up data structures and glsl objects	
-	for (int i = 0; i < 2; i++) cubes[i].cleanup();
+	for (int i = 0;i < 9;i++) cubes[i].cleanup();
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
