@@ -11,9 +11,9 @@ out vec3 fragmentPosition;
 out vec3 fragmentNormal;
 out vec2 UV;
 
-out vec3 ulightdir;
-out vec3 utovdir;
-out vec3 uhalf;
+smooth out vec3 ulightdir;
+smooth out vec3 utovdir;
+smooth out vec3 uhalf;
 
 uniform mat4 ModelTransform;
 uniform mat4 Eye;

@@ -127,7 +127,7 @@ void quad3(Model &model, int a, int b, int c, int d)
 	compute_normal(model, vertices[a], vertices[b], vertices[c]);
 	compute_normal(model, vertices[a], vertices[c], vertices[d]);
 
-	model.add_color(glm::vec3(1.0,1.0,1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
 	model.add_color(glm::vec3(1.0, 1.0, 1.0));
 	model.add_color(glm::vec3(1.0, 1.0, 1.0));
 	model.add_color(glm::vec3(1.0, 1.0, 1.0));

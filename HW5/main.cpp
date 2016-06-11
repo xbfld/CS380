@@ -447,7 +447,7 @@ int main(void)
 	init_texture();
 
 	mat4 oO[9];
-	for (int i = 0;i < 9;i++) oO[i] = objectRBT[i];
+	for (int i = 0; i < 9; i++) oO[i] = objectRBT[i];
 	float angle = 0.0f;
 	double pre_time = glfwGetTime();
 	program_cnt = 0;
@@ -498,22 +498,61 @@ int main(void)
 			//TODO: draw OBJ models		
 			//TODO: pass the light value (uniform variables) to shader
 			//TODO: pass the texture value to shader
+
+			if (program_cnt == 2) {
+				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
+				glUniform1i(isSky, 0);
+				//TODO: pass the cubemap texture to shader
+				glActiveTexture(GL_TEXTURE0 + 3);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
+				glUniform1i(cubeTex, 3);
+
+			}
+			//TODO: pass the first texture value to shader			
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture[0]);
+			glUniform1i(textureID[program_cnt][0], 0);
+
+			//draw first cube models
 			glUseProgram(cubes[0].GLSLProgramID);
 			lightLocCube = glGetUniformLocation(cubes[0].GLSLProgramID, "uLight");
 			glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
 			cubes[0].draw();
+
+			//TODO: pass bump(normalmap) texture value to shader
+			if (program_cnt == 1) {
+				glActiveTexture(GL_TEXTURE0 + 2);
+				glBindTexture(GL_TEXTURE_2D, bumpTex);
+				glUniform1i(bumpTexID, 2);
+			}
+
+			//TODO: pass second texture value to shader						
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_2D, texture[1]);
+			glUniform1i(textureID[program_cnt][1], 1);
+
+			//draw second cube models
 			for (int i = 1; i < 9; i++) {
 				glUseProgram(cubes[i].GLSLProgramID);
 				lightLocCube = glGetUniformLocation(cubes[i].GLSLProgramID, "uLight");
 				glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
 				cubes[i].draw2(cubes[0]);
 			}
+
+
 			if (program_cnt == 2) {
+				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
+				glUniform1i(isSky, 1);
+
+				//TODO: Pass the texture(cubemap value to shader) and eye position
 				glUseProgram(addPrograms[2]);
 				isEye = glGetUniformLocation(addPrograms[2], "WorldCameraPosition");
 				glUniform3f(isEye, eyePosition.x, eyePosition.y, eyePosition.z);
-				isSky = glGetUniformLocation(addPrograms[2], "DrawSkyBox");
-				glUniform1i(isSky, 1);
+				cubeTex = glGetUniformLocation(addPrograms[2], "cubemap");
+				glActiveTexture(GL_TEXTURE0 + 3);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexID);
+				glUniform1i(cubeTex, 3);
+
 				glDepthMask(GL_FALSE);
 				skybox.draw();
 				glDepthMask(GL_TRUE);
