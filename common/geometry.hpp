@@ -189,19 +189,34 @@ void quad4(Model &model, int a, int b, int c, int d, int num)
 	{
 	case 0:
 	case 1:
+		br = glm::vec2((num + 1) / 4., 2 / 3.);
+		bl = glm::vec2((num + 0) / 4., 2 / 3.);
+		tl = glm::vec2((num + 0) / 4., 1 / 3.);
+		tr = glm::vec2((num + 1) / 4., 1 / 3.);
+		break;
 	case 2:
+		br = glm::vec2(2 / 4., 1 / 3.);
+		bl = glm::vec2(1 / 4., 1 / 3.);
+		tl = glm::vec2(1 / 4., 0 / 3.);
+		tr = glm::vec2(2 / 4., 0 / 3.);
+		break;
 	case 3:
-		tl = glm::vec2((num+0) / 4., 1 / 3.);
-		tr = glm::vec2((num+1) / 4., 1 / 3.);
-		bl = glm::vec2((num+0) / 4., 2 / 3.);
-		br = glm::vec2((num+1) / 4., 2 / 3.);
+		br = glm::vec2(1 / 4., 2 / 3.);
+		bl = glm::vec2(2 / 4., 2 / 3.);
+		tl = glm::vec2(2 / 4., 3 / 3.);
+		tr = glm::vec2(1 / 4., 3 / 3.);
 		break;
 	case 4:
+		br = glm::vec2(2 / 4., 1 / 3.);
+		bl = glm::vec2(3 / 4., 1 / 3.);
+		tl = glm::vec2(3 / 4., 2 / 3.);
+		tr = glm::vec2(2 / 4., 2 / 3.);
+		break;
 	case 5:
-		tl = glm::vec2(1 / 4., (2*num-8+0) / 3.);
-		tr = glm::vec2(2 / 4., (2*num-8+0) / 3.);
-		bl = glm::vec2(1 / 4., (2*num-8+1) / 3.);
-		br = glm::vec2(2 / 4., (2*num-8+1) / 3.);
+		br = glm::vec2(4 / 4., 2 / 3.);
+		bl = glm::vec2(3 / 4., 2 / 3.);
+		tl = glm::vec2(3 / 4., 1 / 3.);
+		tr = glm::vec2(4 / 4., 1 / 3.);
 		break;
 	}
 	model.add_texcoord(bl);
