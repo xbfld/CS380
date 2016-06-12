@@ -36,15 +36,11 @@ void main(){
 	mat4 inverseProjection = inverse(Projection);
 	mat3 inverseModelview = mat3(inverse(MVM));
 	if (DrawSkyBox){
-		ReflectDir = -vertexPosition_modelspace;
+		ReflectDir = vertexPosition_modelspace;
 	}
 	else{
-	   vec3 worldPos = vec3(ModelTransform * vec4(vertexPosition_modelspace, 1.0));
-	   vec3 worldNorm = vec3(ModelTransform * vec4(vertexNormal_modelspace, 0.0));
-	   vec3 campos = (Eye*vec4(WorldCameraPosition, 1.0)).xyz;
-	   vec3 worldView = normalize(campos - worldPos);
-
-	   ReflectDir = -reflect(-worldView, worldNorm);
+		ReflectDir = vec3(Eye* vec4(-reflect(-fragmentPosition, normalize(fragmentNormal)),0.));
 	}
+	ReflectDir = vec3(ReflectDir.x,-ReflectDir.yz);
 }
 

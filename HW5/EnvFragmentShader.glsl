@@ -18,14 +18,14 @@ uniform sampler2D myTextureSampler;
 void main(){
 	vec3 normal = normalize(fragmentNormal);
 
-	if (DrawSkyBox){
-		color = vec3(1.0, 1.0, 1.0);
-	}
-	else{
-		color = vec3(0.0, 0.7, 0.7);
-	}
+	// if (DrawSkyBox){
+	// 	color = vec3(1.0, 1.0, 1.0);
+	// }
+	// else{
+	// 	color = vec3(0.0, 0.7, 0.7);
+	// }
 	//TODO: assign color from environmental map(cubemap) texture	
-	vec4 texColor = texture(cubemap, ReflectDir);
+	vec4 texColor = texture(cubemap, normalize(ReflectDir));
 	if(DrawSkyBox){
 	   color = texColor.xyz;
 	}else{
