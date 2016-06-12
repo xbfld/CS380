@@ -10,6 +10,7 @@ out vec3 fragmentNormal;
 out vec2 UV;
 
 smooth out vec3 ReflectDir;
+smooth out vec3 RefractDir;
 
 uniform mat4 ModelTransform;
 uniform mat4 Eye;
@@ -28,7 +29,7 @@ void main(){
 	mat4 NVM = transpose(invm);
 	vec4 tnormal = vec4(vertexNormal_modelspace, 0.0);
 	fragmentNormal = vec3(NVM * tnormal);
-	UV = vertexUV;	
+	UV = vertexUV;
 
 	gl_Position = Projection * wPosition;	
 
@@ -39,8 +40,12 @@ void main(){
 		ReflectDir = vertexPosition_modelspace;
 	}
 	else{
-		ReflectDir = vec3(Eye* vec4(-reflect(-fragmentPosition, normalize(fragmentNormal)),0.));
+		float eta = 0.75;
+		float oneovereta = 1.33;
+		ReflectDir = vec3(Eye* vec4(-reflect(-fragmentPosition, normalize(fragmentNormal)),.0));
+		RefractDir = vec3(Eye* vec4(refract(fragmentPosition, normalize(fragmentNormal),eta),.0)); //air~1 water=1.33, eta = n1/n2
 	}
 	ReflectDir = vec3(ReflectDir.x,-ReflectDir.yz);
+	RefractDir = vec3(RefractDir.x,-RefractDir.yz);
 }
 
