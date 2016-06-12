@@ -137,7 +137,7 @@ void init_cubemap(const char * baseFileName, int size) {
 }
 void init_texture(void) {
 	//TODO: Initialize first texture
-	texture[0] = loadBMP_custom("Judy.bmp");
+	texture[0] = loadBMP_custom("task.bmp");
 	for (int i = 0; i < 3; i++) textureID[i][0] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
 	//TODO: Initialize second texture
 	texture[1] = loadBMP_custom("brick.bmp");

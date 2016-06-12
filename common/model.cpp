@@ -15,7 +15,9 @@ Model::Model()
 	vertices = std::vector<glm::vec3>();
 	indices = std::vector<unsigned int>();
 	normals = std::vector<glm::vec3>();
-	colors = std::vector<glm::vec3>();	
+	colors = std::vector<glm::vec3>();
+	texcoords = std::vector<glm::vec2>();
+	tangents = std::vector<glm::vec3>();
 }
 
 void Model::add_vertex(float x, float y, float z)
@@ -47,13 +49,13 @@ void Model::add_color(glm::vec3 color)
 {
 	colors.push_back(color);
 }
-void Model::add_texcoord(float s, float t){
-	texcoords.push_back(glm::vec2(s,t));
+void Model::add_texcoord(float s, float t) {
+	texcoords.push_back(glm::vec2(s, t));
 }
-void Model::add_texcoord(glm::vec2 norm){
+void Model::add_texcoord(glm::vec2 norm) {
 	texcoords.push_back(norm);
 }
-void Model::add_tangent(glm::vec3 tan){
+void Model::add_tangent(glm::vec3 tan) {
 	tangents.push_back(tan);
 }
 void Model::add_index(unsigned int idx)
@@ -85,7 +87,7 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 {
 	this->GLSLProgramID = LoadShaders(vertexShader_path, fragmentShader_path);
 	this->type = type;
-	
+
 	glGenVertexArrays(1, &this->VertexArrayID);
 	glBindVertexArray(this->VertexArrayID);
 
@@ -119,10 +121,10 @@ void Model::initialize(DRAW_TYPE type, const char * vertexShader_path, const cha
 	//tangent bitangent
 	glGenBuffers(1, &this->TangentID);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TangentID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->tangents.size(), &this->tangents[0], GL_STATIC_DRAW);		
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->tangents.size(), &this->tangents[0], GL_STATIC_DRAW);
 }
 
-void Model::initialize(DRAW_TYPE type,  GLuint program)
+void Model::initialize(DRAW_TYPE type, GLuint program)
 {
 	this->GLSLProgramID = program;
 	this->type = type;
@@ -154,21 +156,21 @@ void Model::initialize(DRAW_TYPE type,  GLuint program)
 	//texture
 	glGenBuffers(1, &this->TexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*this->texcoords.size(), &this->texcoords[0], GL_STATIC_DRAW);	
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*this->texcoords.size(), &this->texcoords[0], GL_STATIC_DRAW);
 
 	//tangent bitangent
 	glGenBuffers(1, &this->TangentID);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TangentID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->tangents.size(), &this->tangents[0], GL_STATIC_DRAW);		
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*this->tangents.size(), &this->tangents[0], GL_STATIC_DRAW);
 }
-void Model::initialize(DRAW_TYPE type, Model model){
+void Model::initialize(DRAW_TYPE type, Model model) {
 	this->GLSLProgramID = model.GLSLProgramID;
 	this->type = type;
-	
+
 	this->VertexArrayID = model.VertexArrayID;
 	glBindVertexArray(this->VertexArrayID);
-	
-	
+
+
 	this->VertexBufferID = model.VertexBufferID;
 	glBindBuffer(GL_ARRAY_BUFFER, this->VertexBufferID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*model.vertices.size(), &model.vertices[0], GL_STATIC_DRAW);
@@ -182,24 +184,24 @@ void Model::initialize(DRAW_TYPE type, Model model){
 	this->NormalBufferID = model.ColorBufferID;
 	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*model.normals.size(), &model.normals[0], GL_STATIC_DRAW);
-	
+
 	//TODO: texture coordinate
-	this->TexBufferID = model.TexBufferID;	
+	this->TexBufferID = model.TexBufferID;
 	glBindBuffer(GL_ARRAY_BUFFER, this->TexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*model.texcoords.size(), &model.texcoords[0], GL_STATIC_DRAW);	
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*model.texcoords.size(), &model.texcoords[0], GL_STATIC_DRAW);
 
 	//tangent
 	this->TangentID = model.TangentID;
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, this->TangentID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*model.tangents.size(), &model.tangents[0], GL_STATIC_DRAW);		
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*model.tangents.size(), &model.tangents[0], GL_STATIC_DRAW);
 }
 void Model::initialize_picking(const char* picking_vertex_shader, const char* picking_fragment_shader)
 {
 	this->PickingProgramID = LoadShaders(picking_vertex_shader, picking_fragment_shader);
 }
 
-bool Model::loadOBJ(const char * path,	glm::vec3 color){
+bool Model::loadOBJ(const char * path, glm::vec3 color) {
 	cout << "Loading OBJ file " << path << "..." << endl;
 	vector<GLushort> elements;
 	vector<glm::vec3> vertices;
@@ -218,7 +220,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 			istringstream s(line.substr(2));
 			glm::vec3 v; s >> v.x; s >> v.y; s >> v.z; //v.w = 1.0f;
 			vertices.push_back(v);
-			
+
 		}
 		else if (line.substr(0, 2) == "f ")
 		{
@@ -227,7 +229,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 			s >> a; s >> b; s >> c;
 			a--; b--; c--;
 			elements.push_back(a); elements.push_back(b); elements.push_back(c);
-		}		
+		}
 		else if (line[0] == '#')
 		{
 			/* ignoring this line */
@@ -239,7 +241,7 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 	}
 
 	normals.resize(vertices.size(), glm::vec3(0.0, 0.0, 0.0));
-		
+
 	for (int i = 0; i < elements.size(); i += 3)
 	{
 		GLushort ia = elements[i];
@@ -247,18 +249,18 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 		GLushort ic = elements[i + 2];
 		glm::vec3 normal = glm::normalize(glm::cross(
 			glm::vec3(vertices[ib]) - glm::vec3(vertices[ia]),
-			glm::vec3(vertices[ic]) - glm::vec3(vertices[ia])));				
-		normals[ia] += normal; normals[ib] += normal; normals[ic] += normal;		
+			glm::vec3(vertices[ic]) - glm::vec3(vertices[ia])));
+		normals[ia] += normal; normals[ib] += normal; normals[ic] += normal;
 
 		add_vertex(vertices[ia]);
 		add_vertex(vertices[ib]);
 		add_vertex(vertices[ic]);
-		
+
 		add_color(color);
 		add_color(color);
 		add_color(color);
 	}
-	for (int i = 0; i < normals.size(); i++){
+	for (int i = 0; i < normals.size(); i++) {
 		normals[i] = glm::normalize(normals[i]);
 	}
 	for (int i = 0; i < elements.size(); i += 3)
@@ -275,13 +277,13 @@ bool Model::loadOBJ(const char * path,	glm::vec3 color){
 	return true;
 }
 
-bool Model::loadOBJ2(const char * path){
+bool Model::loadOBJ2(const char * path) {
 	cout << "Loading OBJ file with texture coordinates" << path << "..." << endl;
 	vector <glm::vec3> points;
 	vector <glm::vec3> norms;
 	vector <glm::vec2> texCoords;
 	vector <glm::vec3> faces;
-	
+
 	ifstream in(path, ios::in);
 	if (!in)
 	{
@@ -294,38 +296,38 @@ bool Model::loadOBJ2(const char * path){
 	while (getline(in, line))
 	{
 		if (line.substr(0, 2) == "v ")
-		{			
+		{
 			istringstream s(line.substr(2));
 			glm::vec3 v; s >> v.x; s >> v.y; s >> v.z; //v.w = 1.0f;
 			points.push_back(v);
 		}
-		else if (line.substr(0, 3) == "vt "){			
+		else if (line.substr(0, 3) == "vt ") {
 			float s, t;
 			istringstream fs(line.substr(3));
 			fs >> s >> t;
 			texCoords.push_back(glm::vec2(s, t));
 		}
 		else if (line.substr(0, 3) == "vn ")
-		{			
+		{
 			float x, y, z;
 			istringstream fs(line.substr(3));
 			fs >> x >> y >> z;
 			norms.push_back(glm::vec3(x, y, z));
-		}		
-		else if (line.substr(0, 2) == "f "){
+		}
+		else if (line.substr(0, 2) == "f ") {
 			face.clear();
 			istringstream fs(line.substr(2));
 			size_t slash1, slash2;
-			while (fs.good()){
+			while (fs.good()) {
 				string vertString;
 				fs >> vertString;
 				//cout << vertString << endl;
 				int pIndex = -1, nIndex = -1, tcIndex = -1;
 				slash1 = vertString.find("/");
-				if (slash1 == string::npos){
+				if (slash1 == string::npos) {
 					pIndex = atoi(vertString.c_str()) - 1;
 				}
-				else{
+				else {
 					slash2 = vertString.find("/", slash1 + 1);
 					pIndex = atoi(vertString.substr(0, slash1).c_str())
 						- 1;
@@ -342,11 +344,11 @@ bool Model::loadOBJ2(const char * path){
 					printf("Missing point index!!!");
 				}
 				else {
-					face.push_back(glm::vec3(pIndex,tcIndex,nIndex));
+					face.push_back(glm::vec3(pIndex, tcIndex, nIndex));
 				}
 				//cout << tcIndex << " " << pIndex << endl;
 				//cout << nIndex << " " << pIndex << endl;
-				if (tcIndex == -1){					
+				if (tcIndex == -1) {
 					isTc = false;
 				}
 				/*if (false && tcIndex != -1 && pIndex != tcIndex) {//texture load good or not
@@ -357,7 +359,7 @@ bool Model::loadOBJ2(const char * path){
 					printf("Normal and point indices are not consistent.\n");
 					exit(1);
 					}*/
-			}			
+			}
 			if (face.size() > 3) {
 				//cout << "HERER" ;
 				glm::vec3 v0 = face[0];
@@ -388,14 +390,14 @@ bool Model::loadOBJ2(const char * path){
 		else
 		{
 			/* ignoring this line */
-		}		
-	}	
+		}
+	}
 	for (int i = 0; i < faces.size(); i += 3)
 	{
 		GLushort via = faces[i][0];
 		GLushort vib = faces[i + 1][0];
 		GLushort vic = faces[i + 2][0];
-		
+
 		add_vertex(points[via]);
 		add_vertex(points[vib]);
 		add_vertex(points[vic]);
@@ -407,8 +409,8 @@ bool Model::loadOBJ2(const char * path){
 		add_normal(norms[nia]);
 		add_normal(norms[nib]);
 		add_normal(norms[nic]);
-				
-		if (isTc){
+
+		if (isTc) {
 			GLushort tia = faces[i][1];
 			GLushort tib = faces[i + 1][1];
 			GLushort tic = faces[i + 2][1];
@@ -424,21 +426,21 @@ bool Model::loadOBJ2(const char * path){
 			glm::vec2 deltaUV2 = texCoords[tic] - texCoords[tia];
 
 			float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-			glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;			
+			glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
 			tangents.push_back(tangent);
 			tangents.push_back(tangent);
-			tangents.push_back(tangent);			
+			tangents.push_back(tangent);
 		}
-	}		
+	}
 	cout << points.size() << " " << norms.size() << " " << texCoords.size() << endl;
-	cout << vertices.size() << " " << normals.size() << " " << texcoords.size() <<endl;	
+	cout << vertices.size() << " " << normals.size() << " " << texcoords.size() << endl;
 	return true;
 }
 
 
 
 void Model::draw()
-{	
+{
 	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
 	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
 	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
@@ -461,7 +463,7 @@ void Model::draw()
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, this->NormalBufferID);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), ((GLvoid*)(0)));
-	
+
 	//texture
 	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TexBufferID);
@@ -472,7 +474,7 @@ void Model::draw()
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TangentID);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		
+
 	if (this->type == DRAW_TYPE::ARRAY)
 	{
 		glDrawArrays(GL_TRIANGLES, 0, this->vertices.size());
@@ -480,11 +482,11 @@ void Model::draw()
 	else {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->IndexBufferID);
 		glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, ((GLvoid *)0));
-	}	
+	}
 }
 
 void Model::draw2(Model model)
-{	
+{
 	GLuint ProjectionID = glGetUniformLocation(this->GLSLProgramID, "Projection");
 	GLuint EyeID = glGetUniformLocation(this->GLSLProgramID, "Eye");
 	GLuint ModelTransformID = glGetUniformLocation(this->GLSLProgramID, "ModelTransform");
@@ -517,17 +519,17 @@ void Model::draw2(Model model)
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, this->TangentID);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	
+
 
 	if (this->type == DRAW_TYPE::ARRAY)
 	{
 		glDrawArrays(GL_TRIANGLES, 0, model.vertices.size());
-	}	
+	}
 }
 
 void Model::drawPicking()
 {
-	if (this->objectID >= 0) 
+	if (this->objectID >= 0)
 	{
 		glUseProgram(this->PickingProgramID);
 		GLuint ProjectionID = glGetUniformLocation(this->PickingProgramID, "Projection");
@@ -538,12 +540,12 @@ void Model::drawPicking()
 		glUniformMatrix4fv(ProjectionID, 1, GL_FALSE, &(*(this->Projection))[0][0]);
 		glUniformMatrix4fv(EyeID, 1, GL_FALSE, &(*(this->Eye))[0][0]);
 		glUniformMatrix4fv(ModelTransformID, 1, GL_FALSE, &(*(this->ModelTransform))[0][0]);
-		
+
 		float r = ((objectID >> 16) & 0xFF) / 255.0f;
 		float g = ((objectID >> 8) & 0xFF) / 255.0f;
 		float b = (objectID & 0xFF) / 255.0f;
 
-		glm::vec3 objectIDVector = glm::vec3(r,g,b);
+		glm::vec3 objectIDVector = glm::vec3(r, g, b);
 		glUniform3f(objectIDLoc, objectIDVector.x, objectIDVector.y, objectIDVector.z);
 
 		glBindVertexArray(this->VertexArrayID);
@@ -580,20 +582,20 @@ void Model::cleanup()
 	// Cleanup VBO and shader
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &this->VertexBufferID);
-	
+
 	//TODO: delete color buffer
 	glDisableVertexAttribArray(2);
 	glDeleteBuffers(1, &this->ColorBufferID);
-	
+
 	//TODO: delete normal buffer
 	glDisableVertexAttribArray(1);
 	glDeleteBuffers(1, &this->NormalBufferID);
-	
+
 	glDisableVertexAttribArray(3);
 	glDeleteBuffers(1, &this->TexBufferID);
 
-		
+
 	if (this->type == DRAW_TYPE::INDEX) glDeleteBuffers(1, &this->IndexBufferID);
 	glDeleteProgram(this->GLSLProgramID);
-	glDeleteVertexArrays(1, &this->VertexArrayID);	
+	glDeleteVertexArrays(1, &this->VertexArrayID);
 }

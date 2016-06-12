@@ -70,7 +70,7 @@ void quad2(Model &model, int a, int b, int c, int d, glm::vec3 color)
 	model.add_texcoord(glm::vec2(-1.0, -1.0));
 	model.add_texcoord(glm::vec2(-1.0, 1.0));
 	model.add_texcoord(glm::vec2(1.0, 1.0));
-	model.add_texcoord(glm::vec2(1.0, -1.0));	
+	model.add_texcoord(glm::vec2(1.0, -1.0));
 
 	compute_normal(model, sky_vertices[a], sky_vertices[b], sky_vertices[c]);
 	compute_normal(model, sky_vertices[a], sky_vertices[c], sky_vertices[d]);
@@ -81,6 +81,8 @@ void quad2(Model &model, int a, int b, int c, int d, glm::vec3 color)
 	model.add_color(color);
 	model.add_color(color);
 	model.add_color(color);
+
+	model.add_tangent(glm::vec3(1.)); // not used
 }
 void quad3(Model &model, int a, int b, int c, int d)
 {
@@ -89,7 +91,7 @@ void quad3(Model &model, int a, int b, int c, int d)
 	model.add_vertex(vertices[c]);
 	model.add_texcoord(glm::vec2(0.0, 0.0));
 	model.add_texcoord(glm::vec2(0.0, 1.0));
-	model.add_texcoord(glm::vec2(1.0, 1.0));	
+	model.add_texcoord(glm::vec2(1.0, 1.0));
 
 	glm::vec3 deltaPos1 = vertices[b] - vertices[a];
 	glm::vec3 deltaPos2 = vertices[c] - vertices[a];
@@ -102,7 +104,7 @@ void quad3(Model &model, int a, int b, int c, int d)
 	model.add_tangent(tangent);
 	model.add_tangent(tangent);
 	model.add_tangent(tangent);
-	
+
 	//////////////////////
 	model.add_vertex(vertices[a]);
 	model.add_vertex(vertices[c]);
@@ -135,10 +137,79 @@ void quad3(Model &model, int a, int b, int c, int d)
 	model.add_color(glm::vec3(1.0, 1.0, 1.0));
 }
 
-void quad4(Model &model, int a, int b, int c, int d,float num)
+void quad4(Model &model, int a, int b, int c, int d, int num)
 {
 	//TODO: Modify texture coordinate according to task.bmp file
-	
+	model.add_vertex(vertices[a]);
+	model.add_vertex(vertices[b]);
+	model.add_vertex(vertices[c]);
+
+	glm::vec3 deltaPos1 = vertices[b] - vertices[a];
+	glm::vec3 deltaPos2 = vertices[c] - vertices[a];
+
+	glm::vec2 deltaUV1 = glm::vec2(0.0, 1.0) - glm::vec2(0.0, 0.0);
+	glm::vec2 deltaUV2 = glm::vec2(1.0, 1.0) - glm::vec2(0.0, 0.0);
+
+	float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+	glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
+	model.add_tangent(tangent);
+	model.add_tangent(tangent);
+	model.add_tangent(tangent);
+
+	//////////////////////
+	model.add_vertex(vertices[a]);
+	model.add_vertex(vertices[c]);
+	model.add_vertex(vertices[d]);
+
+	deltaPos1 = vertices[c] - vertices[a];
+	deltaPos2 = vertices[d] - vertices[a];
+
+	deltaUV1 = glm::vec2(1.0, 1.0) - glm::vec2(0.0, 0.0);
+	deltaUV2 = glm::vec2(1.0, 0.0) - glm::vec2(0.0, 0.0);
+
+	r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+	tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
+	model.add_tangent(tangent);
+	model.add_tangent(tangent);
+	model.add_tangent(tangent);
+
+
+	compute_normal(model, vertices[a], vertices[b], vertices[c]);
+	compute_normal(model, vertices[a], vertices[c], vertices[d]);
+
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+	model.add_color(glm::vec3(1.0, 1.0, 1.0));
+
+	glm::vec2 tl, tr, bl, br;
+	switch (num)
+	{
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		tl = glm::vec2((num+0) / 4., 1 / 3.);
+		tr = glm::vec2((num+1) / 4., 1 / 3.);
+		bl = glm::vec2((num+0) / 4., 2 / 3.);
+		br = glm::vec2((num+1) / 4., 2 / 3.);
+		break;
+	case 4:
+	case 5:
+		tl = glm::vec2(1 / 4., (2*num-8+0) / 3.);
+		tr = glm::vec2(2 / 4., (2*num-8+0) / 3.);
+		bl = glm::vec2(1 / 4., (2*num-8+1) / 3.);
+		br = glm::vec2(2 / 4., (2*num-8+1) / 3.);
+		break;
+	}
+	model.add_texcoord(bl);
+	model.add_texcoord(tl);
+	model.add_texcoord(tr);
+	model.add_texcoord(bl);
+	model.add_texcoord(tr);
+	model.add_texcoord(br);
 }
 
 void init_cube(Model &model, glm::vec3 color)
@@ -150,17 +221,17 @@ void init_cube(Model &model, glm::vec3 color)
 	quad(model, 4, 5, 6, 7, color);
 	quad(model, 5, 4, 0, 1, color);
 }
-void init_texture_cube(Model &model){
-	quad3(model, 1, 0, 3, 2);
-	quad3(model, 2, 3, 7, 6);
-	quad3(model, 3, 0, 4, 7);
-	quad3(model, 6, 5, 1, 2);
-	quad3(model, 4, 5, 6, 7);
-	quad3(model, 5, 4, 0, 1);
-	//TODO: Change quad3 into quad4 with proper face numbering
-	
+void init_texture_cube(Model &model) {
+	//DONE: Change quad3 into quad4 with proper face numbering
+	quad4(model, 1, 0, 3, 2, 0);
+	quad4(model, 2, 3, 7, 6, 1);
+	quad4(model, 3, 0, 4, 7, 2);
+	quad4(model, 6, 5, 1, 2, 3);
+	quad4(model, 4, 5, 6, 7, 4);
+	quad4(model, 5, 4, 0, 1, 5);
+
 }
-void init_skybox(Model &model){		
+void init_skybox(Model &model) {
 	glm::vec3 coco = glm::vec3(1.0f, 1.0f, 1.0f);
 	quad2(model, 1, 0, 3, 2, coco);
 	quad2(model, 2, 3, 7, 6, coco);
@@ -240,20 +311,22 @@ void init_sphere(Model &model)
 			model.add_index(r * sectors + (s + 1)); // 2
 		}
 	}
+	model.add_tangent(glm::vec3(1.));  //not used
+	model.add_texcoord(glm::vec2(1.)); //not used
 }
 
-void init_obj(Model &model, char *path, glm::vec3 color){
+void init_obj(Model &model, char *path, glm::vec3 color) {
 	bool load = model.loadOBJ(path, color);
-	if (!load){
+	if (!load) {
 		std::cout << "imposible to load OBJ file" << std::endl;
 		system("pause");
 		exit(1);
 	}
 }
 
-void init_obj2(Model &model, char *path){
+void init_obj2(Model &model, char *path) {
 	bool load = model.loadOBJ2(path);
-	if (!load){
+	if (!load) {
 		std::cout << "imposible to load OBJ with texture " << std::endl;
 		system("pause");
 		exit(1);
