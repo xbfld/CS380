@@ -66,7 +66,7 @@ bool rot_first_col = false;
 Model skybox;
 glm::mat4 skyboxRBT = glm::translate(0.0f, 0.0f, 0.0f);//Will be fixed(cause it is the sky)
 
-vec3 eyePosition = vec3(0.0, 0.25, 6.0);
+vec3 eyePosition = vec3(0.0, 0.0, 6.0);
 // Mouse interaction
 bool MOUSE_LEFT_PRESS = false; bool MOUSE_MIDDLE_PRESS = false; bool MOUSE_RIGHT_PRESS = false;
 
@@ -90,15 +90,15 @@ GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 GL_TEXTURE_CUBE_MAP_NEGATIVE_Z };
 
 void init_cubeRBT() {
-	objectRBT[0] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, 1.2f, .0f);
-	objectRBT[1] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, 1.2f, .0f);
-	objectRBT[2] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, 1.2f, .0f);
-	objectRBT[3] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, 0.0f, .0f);
-	objectRBT[4] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, 0.0f, .0f);//Center
-	objectRBT[5] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, 0.0f, .0f);
-	objectRBT[6] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(-1.2f, -1.2f, .0f);
-	objectRBT[7] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(0.0f, -1.2f, .0f);
-	objectRBT[8] = glm::scale(0.7f, 0.7f, 0.7f)*glm::translate(1.2f, -1.2f, .0f);
+	objectRBT[0] = glm::translate(-1.2f, 1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[1] = glm::translate(0.0f, 1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[2] = glm::translate(1.2f, 1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[3] = glm::translate(-1.2f, 0.0f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[4] = glm::translate(0.0f, 0.0f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);//Center
+	objectRBT[5] = glm::translate(1.2f, 0.0f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[6] = glm::translate(-1.2f, -1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[7] = glm::translate(0.0f, -1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
+	objectRBT[8] = glm::translate(1.2f, -1.2f, 0.f) * glm::scale(1.1f, 1.1f, 1.1f);
 }
 void set_program(int p) {
 	for (int i = 0; i < 9; i++) {
@@ -120,12 +120,12 @@ void init_cubemap(const char * baseFileName, int size) {
 		GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 	};
 	GLint w, h;
-	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, size, size);
+	//glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, size, size);
 	for (int i = 0; i < 6; i++) {
 		std::string texName = std::string(baseFileName) + "_" + suffixes[i] + ".bmp";
 		unsigned char* data = loadBMP_cube(texName.c_str(), &w, &h);
-		glTexSubImage2D(targets[i], 0, 0, 0, w, h,
-			GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(targets[i], 0, GL_RGB, w, h, 0,
+			GL_BGR, GL_UNSIGNED_BYTE, data);
 		delete[] data;
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -137,11 +137,19 @@ void init_cubemap(const char * baseFileName, int size) {
 }
 void init_texture(void) {
 	//TODO: Initialize first texture
-	texture[0] = loadBMP_custom("task.bmp");
-	for (int i = 0; i < 3; i++) textureID[i][0] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
-	//TODO: Initialize second texture
-	texture[1] = loadBMP_custom("brick.bmp");
-	for (int i = 0; i < 3; i++) textureID[i][1] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
+	const char * suffixes[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8" };
+	for (size_t j = 0; j < 9; j++)
+	{
+		std::string texName = std::string() + "cube_" + suffixes[j] + ".bmp";
+		texture[j] = loadBMP_custom(texName.c_str());
+		for (int i = 0; i < 3; i++) textureID[i][j] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
+	}
+	//texture[0] = loadBMP_custom("cube.bmp");
+	//for (int i = 0; i < 3; i++) textureID[i][0] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
+
+	////TODO: Initialize second texture
+	//texture[1] = loadBMP_custom("brick.bmp");
+	//for (int i = 0; i < 3; i++) textureID[i][1] = glGetUniformLocation(addPrograms[i], "myTextureSampler");
 	//TODO: Initialize bump texture
 	bumpTex = loadBMP_custom("brick_bump.bmp");
 	bumpTexID = glGetUniformLocation(addPrograms[1], "myBumpSampler");
@@ -526,13 +534,13 @@ int main(void)
 				glUniform1i(bumpTexID, 2);
 			}
 
-			//TODO: pass second texture value to shader						
-			glActiveTexture(GL_TEXTURE0 + 1);
-			glBindTexture(GL_TEXTURE_2D, texture[1]);
-			glUniform1i(textureID[program_cnt][1], 1);
 
-			//draw second cube models
 			for (int i = 1; i < 9; i++) {
+				//TODO: pass second texture value to shader						
+				glActiveTexture(GL_TEXTURE0 + 10 + i);
+				glBindTexture(GL_TEXTURE_2D, texture[i]);
+				glUniform1i(textureID[program_cnt][i], 10 + i);
+				//draw second cube models
 				glUseProgram(cubes[i].GLSLProgramID);
 				lightLocCube = glGetUniformLocation(cubes[i].GLSLProgramID, "uLight");
 				glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
