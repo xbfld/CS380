@@ -6,6 +6,7 @@ in vec2 UV;
 
 smooth in vec3 ReflectDir;
 smooth in vec3 RefractDir;
+in float Reflectivity;
 // smooth in vec3 UVy;
 
 // Ouput data
@@ -32,8 +33,14 @@ void main(){
 	if(DrawSkyBox){
 	   color = texColor.xyz;
 	}else{
+        float cosine = dot(normal, -normalize(fragmentPosition));//cos theta = dot (N V)
+        //Schlick's approximation
+        float rtheta = clamp(Reflectivity + (1.0-Reflectivity)*pow((1-cosine),5.0),0.0,1.0);
+
         vec4 Kd = texture(myTextureSampler, UV);
-        color = mix(Kd, texture(cubemap, normalize(RefractDir)), 0.85).xyz;
+        vec4 T = texture(cubemap, normalize(RefractDir));
+        vec4 R = texture(cubemap, normalize(ReflectDir));
+        color = mix(T, mix(Kd, R, 0.7), rtheta).xyz;
         // vec3 ortho = RefractDir+reflect(RefractDir, normalize(fragmentNormal));
         // vec3 para = RefractDir-reflect(RefractDir, normalize(fragmentNormal));
         

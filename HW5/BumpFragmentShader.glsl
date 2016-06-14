@@ -9,12 +9,16 @@ in vec2 UV;
 in vec3 ulightdir;
 in vec3 utovdir;
 in vec3 uhalf;
+in vec3 vlightdir;
+in vec3 vtovdir;
+in vec3 vhalf;
 
 // Ouput data
 out vec3 color;
 
 //Uniform variables
 uniform vec3 uLight;
+uniform vec3 vLight;
 
 uniform sampler2D myTextureSampler;
 uniform sampler2D myBumpSampler;
@@ -31,7 +35,7 @@ void main(){
 	h = uhalf;
 
 	//TODO: change normal with loaded normal texture
-	normal = texture(myBumpSampler, UV).rgb*2.0 - 1.0;
+	normal = normalize(texture(myBumpSampler, UV).rgb*2.0 - 1.0);
 
 	float specular = pow(max(0.0, dot(h, normal)), 64.0);
 	float diffuse = max(0.0, dot(normal, tolight));
@@ -42,5 +46,23 @@ void main(){
 	vec3 intensity = Kd*diffuse + vec3(0.3, 0.3, 0.3)*specular;
 
 	vec3 finalColor = intensity;
+
+	//points light
+	tolight = vlightdir;
+	toV = vtovdir;
+	h = vhalf;
+
+	//TODO: change normal with loaded normal texture
+	normal = normalize(texture(myBumpSampler, UV).rgb*2.0 - 1.0);
+
+	specular = pow(max(0.0, dot(h, normal)), 64.0);
+	diffuse = max(0.0, dot(normal, tolight));
+	Kd = vec3(1.0, 1.0, 1.0);
+	//TODO: Change material color to texture color
+	Kd = texture(myTextureSampler, UV).rgb;
+
+	intensity = Kd*diffuse + vec3(0.3, 0.3, 0.3)*specular;
+
+	finalColor += intensity;
 	color = pow(finalColor, vec3(1.0 / 2.2));// Apply gamma correction    		
 }

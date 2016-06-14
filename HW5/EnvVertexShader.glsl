@@ -8,6 +8,7 @@ layout(location = 3) in vec2 vertexUV;
 out vec3 fragmentPosition;
 out vec3 fragmentNormal;
 out vec2 UV;
+out float Reflectivity;
 
 smooth out vec3 ReflectDir;
 smooth out vec3 RefractDir;
@@ -36,14 +37,17 @@ void main(){
 	//TODO: Calculate Reflection Dir for Environmental map
 	mat4 inverseProjection = inverse(Projection);
 	mat3 inverseModelview = mat3(inverse(MVM));
+	Reflectivity = 1;
 	if (DrawSkyBox){
 		ReflectDir = vertexPosition_modelspace;
 	}
 	else{
-		float eta = 0.75;
-		float oneovereta = 1.33;
+		float eta = 0.6666; //air~1 glass=1.5, eta = n1/n2
+		float oneovereta = 1.5;
+		// Reflectivity from Fresnel equations
+		Reflectivity = pow(abs((eta-1.0)/(eta+1.0)),2.0);
 		ReflectDir = vec3(Eye* vec4(-reflect(-fragmentPosition, normalize(fragmentNormal)),.0));
-		RefractDir = vec3(Eye* vec4(refract(fragmentPosition, normalize(fragmentNormal),eta),.0)); //air~1 water=1.33, eta = n1/n2
+		RefractDir = vec3(Eye* vec4(refract(fragmentPosition, normalize(fragmentNormal),eta),.0));
 	}
 	ReflectDir = vec3(ReflectDir.x,-ReflectDir.yz);
 	RefractDir = vec3(RefractDir.x,-RefractDir.yz);

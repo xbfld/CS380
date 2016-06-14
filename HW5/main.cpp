@@ -45,7 +45,7 @@ float windowWidth = 1024.0f;
 float windowHeight = 768.0f;
 int frameBufferWidth = 0;
 int frameBufferHeight = 0;
-float fov = 45.0f;
+float fov = 60.0f;
 float fovy = fov;
 bool animate = true;
 
@@ -59,8 +59,10 @@ glm::mat4 aFrame;
 glm::mat4 objectRBT[9];
 Model cubes[9];
 int program_cnt = 1;
+int cube_index[9]{ 0,1,2,3,4,5,6,7,8 };
 //cube animation
-bool rot_first_col = false;
+int rot_line = 0;
+float ani_delta = 10.0f;
 
 //Sky box
 Model skybox;
@@ -336,6 +338,12 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	glm::mat4 m;
 	if (action == GLFW_PRESS)
 	{
+		std::vector<int> line{ GLFW_KEY_Q , GLFW_KEY_A , GLFW_KEY_W, GLFW_KEY_D, GLFW_KEY_R, GLFW_KEY_F, GLFW_KEY_2, GLFW_KEY_3, GLFW_KEY_S, GLFW_KEY_E, GLFW_KEY_X, GLFW_KEY_C};
+		for (size_t i = 0; i < line.size(); i++)
+		{
+			if (key == line[i] && rot_line == 0)
+				rot_line = i+1;
+		}
 		switch (key)
 		{
 		case GLFW_KEY_4:
@@ -347,11 +355,6 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 			if (program_cnt > 2)
 				program_cnt = 0;
 			set_program(program_cnt);
-			break;
-		case GLFW_KEY_Q://lotate first column
-			if (!rot_first_col) {
-				rot_first_col = true;
-			}
 			break;
 		default:
 			break;
@@ -374,7 +377,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Homework5", NULL, NULL);
+	window = glfwCreateWindow((int)windowWidth, (int)windowHeight, "Homework5: 20130156 김준", NULL, NULL);
 	if (window == NULL) {
 		glfwTerminate();
 		return -1;
@@ -474,19 +477,61 @@ int main(void)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			eyeRBT = (view_index == 0) ? skyRBT : objectRBT[0];
 
-			//cube rotation
-			if (rot_first_col) {
-				ani_angle += 0.3f;
-				objectRBT[0] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[0];
-				objectRBT[3] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[3];
-				objectRBT[6] = glm::rotate(glm::mat4(1.0f), ani_angle * 10, glm::vec3(1.0f, 0.0f, 0.0f)) * curRBT[6];
+			std::vector<int> line;
+			int direction = (rot_line%2)*2-1;
+			vec3 rot_axis = (rot_line<=6) ? vec3(-1.f,0.f,0.f) : vec3(0.f, -1.f, 0.f);
 
+			switch (rot_line)
+			{
+			case 1:
+			case 2:
+				line = { 0,3,6 };
+				break;
+			case 3:
+			case 4:
+				line = { 1,4,7 };
+				break;
+			case 5:
+			case 6:
+				line = { 2,5,8 };
+				break;
+			case 7:
+			case 8:
+				line = { 0,1,2 };
+				break;
+			case 9:
+			case 10:
+				line = { 3,4,5 };
+				break;
+			case 11:
+			case 12:
+				line = { 6,7,8 };
+				break;
+			default:
+				break;
+			}
+
+			//cube rotation
+			if(rot_line>0)
+			{
+				ani_angle += 0.3f;
+				for (size_t i = 0; i < line.size(); i++)
+				{
+					objectRBT[cube_index[line[i]]] = glm::rotate(glm::mat4(1.0f), ani_angle * ani_delta * direction, rot_axis) * curRBT[cube_index[line[i]]];
+				}
 				ani_count++;
 				if (ani_count > 59) {
-					curRBT[0] = objectRBT[0];
-					curRBT[3] = objectRBT[3];
-					curRBT[6] = objectRBT[6];
-					rot_first_col = false;
+					for (size_t i = 0; i < line.size(); i++)
+					{
+						curRBT[cube_index[line[i]]] = objectRBT[cube_index[line[i]]];
+					}
+					int _i0 = cube_index[line[2]];
+					int _i1 = cube_index[line[1]];
+					int _i2 = cube_index[line[0]];
+					cube_index[line[0]] = _i0;
+					cube_index[line[1]] = _i1;
+					cube_index[line[2]] = _i2;
+					rot_line = 0;
 					ani_angle = 0.0f;
 					ani_count = 0;
 				}
@@ -525,6 +570,8 @@ int main(void)
 			glUseProgram(cubes[0].GLSLProgramID);
 			lightLocCube = glGetUniformLocation(cubes[0].GLSLProgramID, "uLight");
 			glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
+			lightLocCube = glGetUniformLocation(cubes[0].GLSLProgramID, "vLight");
+			glUniform3f(lightLocCube, pLightPos.x, pLightPos.y, pLightPos.z);
 			cubes[0].draw();
 
 			//TODO: pass bump(normalmap) texture value to shader
@@ -544,6 +591,8 @@ int main(void)
 				glUseProgram(cubes[i].GLSLProgramID);
 				lightLocCube = glGetUniformLocation(cubes[i].GLSLProgramID, "uLight");
 				glUniform3f(lightLocCube, lightVec.x, lightVec.y, lightVec.z);
+				lightLocCube = glGetUniformLocation(cubes[i].GLSLProgramID, "vLight");
+				glUniform3f(lightLocCube, pLightPos.x, pLightPos.y, pLightPos.z);
 				cubes[i].draw2(cubes[0]);
 			}
 

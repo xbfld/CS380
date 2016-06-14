@@ -14,18 +14,28 @@ out vec2 UV;
 smooth out vec3 ulightdir;
 smooth out vec3 utovdir;
 smooth out vec3 uhalf;
+smooth out vec3 vlightdir;
+smooth out vec3 vtovdir;
+smooth out vec3 vhalf;
 
 uniform mat4 ModelTransform;
 uniform mat4 Eye;
 uniform mat4 Projection;
 
 uniform vec3 uLight;
+uniform vec3 vLight;
+
+uniform sampler2D myTextureSampler;
+uniform sampler2D myBumpSampler;
+
+vec3 tspace(vec3 p, vec3 t, vec3 b, vec3 n);
 
 void main(){
 	// Output position of the vertex, in clip space : MVP * position
 	mat4 MVM = inverse(Eye) * ModelTransform;
 
 	vec4 wPosition = MVM * vec4(vertexPosition_modelspace, 1);
+    // wPosition.xyz = floor(wPosition.xyz*5.0)/5.0; // Pixelizer
 	fragmentPosition = wPosition.xyz;
 	gl_Position = Projection * wPosition;
 
@@ -37,31 +47,38 @@ void main(){
 	fragmentNormal = vec3(NVM * tnormal);
 	UV = vertexUV;
 
+	// vec3 dv = texture(myBumpSampler, UV).rgb*2.0 - 1.0;;
+	// float df = 0.30*dv.x + 0.59*dv.y + 0.11*dv.z;
+	// gl_Position = Projection * vec4(fragmentPosition + normalize(fragmentNormal)*df,1);
+
 	//Light properties in tanget space
 	vec3 n = vec3(NVM * tnormal);
 	vec3 t = normalize((NVM * vec4(tangents,0))).xyz;
 	vec3 b = cross(n, t);
 
 	vec3 vert_pos = wPosition.xyz;
-	vec3 lightDir = normalize(uLight - vert_pos);
-
-	vec3 v;
-	v.x = dot(lightDir, t);
-	v.y = dot(lightDir, b);
-	v.z = dot(lightDir, n);
-	ulightdir = normalize(v);
-
-	v.x = dot(vert_pos, t);
-	v.y = dot(vert_pos, b);
-	v.z = dot(vert_pos, n);
-	utovdir = normalize(v);
-
+	vec3 lightDir = normalize(uLight);
 	vec3 halfVector = normalize(vert_pos + lightDir);
-	v.x = dot(halfVector, t);
-	v.y = dot(halfVector, b);
-	v.z = dot(halfVector, n);
-		
-	uhalf = v;
+
+	ulightdir = normalize(tspace(lightDir,t,b,n));
+	utovdir = normalize(tspace(vert_pos,t,b,n));
+	uhalf = tspace(halfVector,t,b,n);
 
 	//TODO: calculate one or more lights properties in tangent space and pass to fragment shader
+	vert_pos = wPosition.xyz;
+	lightDir = normalize(vLight - vert_pos);
+	halfVector = normalize(vert_pos + lightDir);
+
+	vlightdir = normalize(tspace(lightDir,t,b,n));
+	vtovdir = normalize(tspace(vert_pos,t,b,n));
+	vhalf = tspace(halfVector,t,b,n);
+}
+
+vec3 tspace(vec3 p, vec3 t, vec3 b, vec3 n)
+{
+	vec3 v;
+	v.x = dot(p, t);
+	v.y = dot(p, b);
+	v.z = dot(p, n);
+	return v;
 }
